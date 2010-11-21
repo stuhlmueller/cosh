@@ -2,6 +2,7 @@
 
 (import (rnrs)
         (rnrs mutable-pairs)
-        (scheme-tools))
+        (scheme-tools)
+        (rhash))
 
 %(code)s
