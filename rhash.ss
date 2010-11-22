@@ -27,7 +27,8 @@
          hash-table-fold
          hash-table-copy
          hash-table-merge!
-         finitize)
+         finitize
+         requal?)
  
  (import (rnrs)
          (scheme-tools)

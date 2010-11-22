@@ -5,7 +5,7 @@ from external import optfunc
 # enumerate smartly & print out context graph
 
 @optfunc.main
-def main(fn):
+def main(fn, debug=False):
     """Usage: %prog <file>"""
     # read fn
     expr = open(fn).read()
@@ -24,5 +24,8 @@ def main(fn):
     f.write(graph_generator)
     f.close()
     # run
-    p = Popen("ikarus --r6rs-script ./cc.out", shell=True)
+    if debug:
+        p = Popen("ikarus --debug --r6rs-script ./cc.out", shell=True)
+    else:
+        p = Popen("ikarus --r6rs-script ./cc.out", shell=True)
     p.communicate()

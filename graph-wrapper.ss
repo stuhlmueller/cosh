@@ -29,5 +29,5 @@
     %(cc_code)s
     ))
 
-(print-graph thunk)
+(print-marginals thunk)
 

@@ -27,6 +27,6 @@
                                     'l2-code
                                     x)))
                'l1-code)))
-    (print-graph thunk)))
+    (print-marginals thunk)))
 
 (test)
