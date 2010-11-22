@@ -26,14 +26,15 @@
          hash-table-walk
          hash-table-fold
          hash-table-copy
-         hash-table-merge!)
+         hash-table-merge!
+         finitize)
  
  (import (rnrs)
          (scheme-tools)
          (transforms)
          (except (_srfi :69) string-hash string-ci-hash))
 
- (define (finitize obj)
+ (define/kw (finitize obj)
    (define seen '())
    (define sym (symbol-maker 's))
    (define (fin obj)
