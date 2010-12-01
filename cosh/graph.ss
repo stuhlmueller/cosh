@@ -6,7 +6,7 @@
 
  (cosh graph)
 
- (export thunk->graph)
+ (export cc-cps-thunk->graph)
 
  (import (rnrs)
          (cosh continuation)
@@ -36,39 +36,31 @@
    (let ([clos (continuation:closure node)])
      ((vector-ref clos 0) clos value)))
 
- (define (get-values node)
-   (continuation:support node))
-
- (define (get-scores node)
-   (continuation:scores node)) 
+ (define (step graph queue)
+   (let ([node (dequeue! queue)])
+     (when (continuation? node)
+           (let* ([values (continuation:support node)]
+                  [scores (continuation:scores node)]
+                  [nodes (map (lambda (v) (call node v)) values)])
+             (for-each (lambda (n v s)
+                         (if (graph:node-exists? graph n)
+                             (graph:link! graph node n v s)
+                             (begin
+                               (graph:add-child! graph node n v s)
+                               (enqueue! queue n))))
+                       nodes values scores)))
+     graph))
 
  (define (explode graph)
-   (define queue (make-queue (graph:root graph)))
-   ;; step: graph -> graph
-   (define (step graph)
+   (let loop ([graph graph]
+              [queue (make-queue (graph:root graph))])
      (if (queue-empty? queue)
-         #f
-         (let ([node (dequeue! queue)])
-           (when (continuation? node)
-                 (let* ([values (get-values node)]
-                        [scores (get-scores node)]
-                        [nodes (map (lambda (v) (call node v)) values)])
-                   (for-each (lambda (n v s)
-                               (begin
-                                 (graph:add-child! graph node n v s)
-                                 (enqueue! queue n)))
-                             nodes values scores)))
-           graph)))
-   ;; explode: graph -> graph
-   (define (%explode graph)
-     ;; (display ".")
-     (let ([new-graph (step graph)])
-       (if (false? new-graph)
-           graph
-           (%explode new-graph))))
-   (%explode graph))
-
- (define thunk->graph
+         (begin
+           ;; (display-graph graph)
+           graph)
+         (loop (step graph queue) queue))))
+ 
+ (define cc-cps-thunk->graph
    ($ add-root
       explode
       init))

@@ -1,5 +1,7 @@
 #!r6rs
 
+;; continuations can be compared using "equal?"
+
 (library
 
  (cosh continuation)
@@ -9,7 +11,8 @@
          continuation:closure
          continuation:support
          continuation:scores
-         continuation?)
+         continuation?
+         continuations-equal?)
 
  (import (rnrs)
          (_srfi :1)
@@ -30,5 +33,9 @@
  
  (define (continuation? obj)
    (tagged-list? obj 'cont))
+
+ (define (continuations-equal? c1 c2)
+   (eq? (continuation:closure-id c1)
+        (continuation:closure-id c2)))
 
  )
