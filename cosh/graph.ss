@@ -15,7 +15,7 @@
 
 (library
 
- (graph)
+ (cosh graph)
 
  (export print-graph
          print-marginals
@@ -263,20 +263,25 @@
                              (graph:children graph node)))
                (loop)))))))
 
+ (define thunk->graph
+   ($ add-root
+      explode
+      init))
+
+ (define thunk->graph-table
+   ($ finitize
+      hash-table->alist
+      graph:table
+      thunk->graph))
+
  (define (print-graph thunk)
    (map pretty-print
-    (finitize
-     (hash-table->alist
-      (graph:table
-       (explode
-        (init thunk)))))))
+    (thunk->graph thunk)))
 
  (define (print-marginals thunk)
    (map pretty-print
         (marginalize
-         (add-root
-          (explode
-           (init thunk)))
-          1)))
+         (thunk->graph thunk)
+         1)))
 
  )
