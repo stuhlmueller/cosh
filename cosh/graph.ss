@@ -26,8 +26,8 @@
          (scheme-tools)
          (scheme-tools queue)
          (transforms)
-         (rhash)
-         (mem))
+         (scheme-tools hash)
+         (scheme-tools mem))
 
  (define-record-type graph
    (fields (mutable root graph:root graph:set-root!)

@@ -5,7 +5,7 @@
 (import (rnrs)
         (scheme-tools)
         (transforms)
-        (rhash))
+        (scheme-tools hash))
 
 (define (transform expr reserved-words)
   (cc-transform

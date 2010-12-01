@@ -1,6 +1,6 @@
 #!r6rs
 
-(import (graph)
+(import (cosh graph)
         (rnrs)
         (rnrs mutable-pairs)
         (scheme-tools))

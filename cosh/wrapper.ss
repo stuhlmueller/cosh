@@ -3,6 +3,6 @@
 (import (rnrs)
         (rnrs mutable-pairs)
         (scheme-tools)
-        (rhash))
+        (scheme-tools hash))
 
 %(code)s
