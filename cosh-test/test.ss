@@ -7,11 +7,6 @@
         (cosh-test header)
         (cosh-test pragmatics))
 
-(define (with-preamble expr)
-  `(begin
-     ,@preamble
-     ,expr))
-
 (define simple-expr
   '(list (flip) (flip)))
 

@@ -4,9 +4,15 @@
 
  (cosh-test preamble)
 
- (export preamble)
+ (export preamble
+         with-preamble)
 
  (import (rnrs))
+
+ (define (with-preamble expr)
+  `(begin
+     ,@preamble
+     ,expr))
 
  (define preamble
    '((define sample (lambda (thunk) (thunk)))

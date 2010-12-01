@@ -6,7 +6,12 @@
 
  (cosh graph)
 
- (export cc-cps-thunk->graph)
+ (export cc-cps-thunk->graph
+         node->graph
+         init
+         add-root
+         step
+         explode)
 
  (import (rnrs)
          (cosh continuation)
@@ -32,16 +37,13 @@
      (graph:set-root! graph new-root-cont)
      graph))
 
- (define (call node value)
-   (let ([clos (continuation:closure node)])
-     ((vector-ref clos 0) clos value)))
-
  (define (step graph queue)
    (let ([node (dequeue! queue)])
      (when (continuation? node)
            (let* ([values (continuation:support node)]
                   [scores (continuation:scores node)]
-                  [nodes (map (lambda (v) (call node v)) values)])
+                  [nodes (map (lambda (v) (call-continuation node v))
+                              values)])
              (for-each (lambda (n v s)
                          (if (graph:node-exists? graph n)
                              (graph:link! graph node n v s)
@@ -52,13 +54,12 @@
      graph))
 
  (define (explode graph)
-   (let loop ([graph graph]
-              [queue (make-queue (graph:root graph))])
-     (if (queue-empty? queue)
-         (begin
-           ;; (display-graph graph)
-           graph)
-         (loop (step graph queue) queue))))
+   (let ([queue (make-queue (graph:root graph))])
+     (let loop ([graph graph])
+       (if (queue-empty? queue)
+           ;; (call&return display-graph graph)
+           graph
+           (loop (step graph queue))))))
  
  (define cc-cps-thunk->graph
    ($ add-root

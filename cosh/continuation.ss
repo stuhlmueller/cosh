@@ -12,7 +12,8 @@
          continuation:support
          continuation:scores
          continuation?
-         continuations-equal?)
+         continuations-equal?
+         call-continuation)
 
  (import (rnrs)
          (_srfi :1)
@@ -37,5 +38,9 @@
  (define (continuations-equal? c1 c2)
    (eq? (continuation:closure-id c1)
         (continuation:closure-id c2)))
+
+ (define (call-continuation cont value)
+   (let ([clos (continuation:closure cont)])
+     ((vector-ref clos 0) clos value)))
 
  )
