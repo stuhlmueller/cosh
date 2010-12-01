@@ -61,7 +61,7 @@
            (finitize obj2)))
 
  (define (make-rhash-table)
-   (make-hash-table requal? rhash))
+   (make-hash-table requal? (lambda args (inexact->exact (apply rhash args)))))
 
  (define (test)
    (define test-obj (vector (lambda (x) x) 2 3))

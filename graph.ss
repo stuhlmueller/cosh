@@ -1,16 +1,13 @@
 #!r6rs
 
-;; assumptions:
-;; - terminal values are not vectors
-;; - all random primitives are fair flips
-
 ;; data types:
 ;; table: cont -> conns
 ;; uptable: cont -> conns
 ;; conns: v -> (p . node)
 ;;       [conn-1 conn-2 ...]
 ;; node: cont | value
-;; cont: v -> cont | value
+;; cont: (closure, support, scores)
+;; closure: v -> cont | value
 
 ;; fixme:
 ;; - don't deal with cont objs directly; map to ids
@@ -21,10 +18,11 @@
  (graph)
 
  (export print-graph
-         print-marginals)
+         print-marginals
+         make-cont)
 
  (import (rnrs)
-         (only (_srfi :1) first second)
+         (only (_srfi :1) first second third fourth)
          (scheme-tools)
          (scheme-tools queue)
          (transforms)
@@ -40,6 +38,40 @@
     (lambda (p)
       (lambda () (p 'empty (make-hash-table) (make-hash-table) '())))))
 
+ (define clos-symbol-maker (symbol-maker 'clos))
+ (define clos->symbol-table (make-hash-table))
+ (define symbol->clos-table (make-hash-table))
+
+ (define (make-closure-symbol-entries clos sym)
+   (hash-table-set! clos->symbol-table
+                    clos
+                    sym)
+   (hash-table-set! symbol->clos-table
+                    sym
+                    clos))
+
+ (define (closure->symbol clos)
+   (hash-table-ref clos->symbol-table
+                   clos
+                   (lambda ()
+                     (let ([sym (clos-symbol-maker)])
+                       (make-closure-symbol-entries clos sym)
+                       sym))))
+
+ (define (symbol->closure sym)
+   (hash-table-ref symbol->clos-table
+                   sym
+                   (lambda () (error sym "no closure found!"))))
+
+ ;; this is a list in order to make it easy for hashing to deconstruct it
+ (define (make-cont closure support scores)
+   (list 'cont (closure->symbol closure) support scores))
+ (define cont:closure second)
+ (define cont:support third)
+ (define cont:scores fourth)
+ (define (cont? obj)
+   (tagged-list? obj 'cont))
+
  (define (graph:pop-frontier! graph)
    (let ([frontier (graph:frontier graph)])
      (if (null? frontier)
@@ -54,9 +86,9 @@
  (define (graph:add-node! graph node)
    (let ([node-exists (hash-table-ref/default (graph:table graph) node #f)])
      (when (not node-exists)
-           (begin
-             (hash-table-set! (graph:table graph) node '())
-             (hash-table-set! (graph:uptable graph) node '()))
+           ;; (display "*")
+           (hash-table-set! (graph:table graph) node '())
+           (hash-table-set! (graph:uptable graph) node '())
            (graph:push-frontier! graph node))))
 
  (define (graph:children graph node)
@@ -117,21 +149,20 @@
    (graph:add-node! graph child)
    (graph:connect! graph node child value score))
 
- (define (cont? node) (vector? node))
-
- (define (value? node) (not (vector? node)))
+ (define (value? node) (not (cont? node)))
 
  (define leaf? value?)
 
  ;; (node, value) -> node
  (define (call node value)
-   ((vector-ref node 0) node value))
+   (let ([clos (symbol->closure (cont:closure node))])
+     ((vector-ref clos 0) clos value)))
 
  (define (get-values node)
-   (list #t #f))
+   (cont:support node))
 
  (define (get-scores node)
-   (list .5 .5))
+   (cont:scores node))
 
  (define (node->graph node)
    (let ([graph (make-graph)])
@@ -153,6 +184,7 @@
 
  ;; explode: graph -> graph
  (define (explode graph)
+   ;; (display ".")
    (let ([new-graph (step graph)])
      (if (false? new-graph)
          graph
@@ -162,37 +194,74 @@
  (define (init thunk)
    (node->graph (thunk)))
 
+ (define (add-root graph)
+   (let ([new-root-cont (make-cont 'root '(#t) '(1.0))]
+         [old-root-cont (graph:root graph)])
+     (graph:add-node! graph new-root-cont)
+     (graph:connect! graph new-root-cont old-root-cont #t 1.0)
+     (graph:set-root! graph new-root-cont)
+     (graph:set-frontier! graph '())
+     graph))
+
  ;; nodes are uniquely identified by their value
- (define (marginalize graph)
+ (define (marginalize graph n)
    (assert (null? (graph:frontier graph)))
    (let ([root (graph:root graph)])
+     (define (root? node)
+       (requal? node root))
      (define score
        (mem
-        (lambda (node)
-          (let ([conns (graph:parent-conns graph node)])
-            (if (null? conns)
-                1.0
-                (sum (map (lambda (conn)
-                            (* (conn->score conn)
-                               (score (conn->node conn))))
-                          conns)))))))
+        (lambda (node t)
+          (if (or (= t 0)
+                  (root? node))
+              1.0
+              (let ([conns (graph:parent-conns graph node)])
+                (if (null? conns)
+                    1.0
+                    (sum (map (lambda (conn)
+                                (* (conn->score conn)
+                                   (score (conn->node conn) (- t 1))))
+                              conns))))))))
+     (define seen '())
+     (define seen?
+       (lambda (node t)
+         (let* ([key (pair t node)]
+                [val (find (lambda (x) (requal? x key)) seen)])
+           (when (eq? val #f)
+                 (set! seen (cons key seen)))
+           val)))
      (define scores '())
-     (define frontier
+     (define frontier (make-frontier))
+     (define (make-frontier)
        (let ([q (make-empty-queue)])
          (enqueue! q root)
          q))
      (define (store! val p)
        (set! scores (pair (pair val p) scores)))
-     (let loop ()
-       (if (queue-empty? frontier)
-           scores
-           (let ([node (dequeue! frontier)])
-             (if (leaf? node)
-                 (when (not (assoc node scores))
-                       (store! node (score node)))
-                 (for-each (enqueue-if-new! requal? frontier)
-                           (graph:children graph node)))
-             (loop))))))
+     (define (display-graph t)
+       (pretty-print
+        (map (lambda (kv) (score (first kv) t))
+             (hash-table->alist (graph:table graph)))))
+     (let timestep ([t 1])
+       (display "| ")
+       (set! scores '())
+       (set! frontier (make-frontier))
+       (let loop ()
+         ;; (display (queue-length frontier))
+         (display ".")
+         (if (queue-empty? frontier)
+             (if (= t n)
+                 (begin
+                   ;; (display-graph t)
+                   scores)
+                 (timestep (+ t 1)))
+             (let ([node (dequeue! frontier)])
+               (if (leaf? node)
+                   (when (not (assoc node scores))
+                         (store! node (score node t)))
+                   (for-each (lambda (node) (when (not (seen? node t)) (enqueue-if-new! requal? frontier node)))
+                             (graph:children graph node)))
+               (loop)))))))
 
  (define (print-graph thunk)
    (map pretty-print
@@ -205,7 +274,9 @@
  (define (print-marginals thunk)
    (map pretty-print
         (marginalize
-         (explode
-          (init thunk)))))
+         (add-root
+          (explode
+           (init thunk)))
+          1)))
 
  )
