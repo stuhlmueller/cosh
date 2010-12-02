@@ -18,6 +18,7 @@
  (import (rnrs)
          (_srfi :1)
          (scheme-tools)
+         (scheme-tools deepcopy)
          (scheme-tools object-id))
 
  (define (make-continuation closure support scores)
@@ -40,7 +41,7 @@
         (continuation:closure-id c2)))
 
  (define (call-continuation cont value)
-   (let ([clos (continuation:closure cont)])
+   (let ([clos (deepcopy (continuation:closure cont))])
      ((vector-ref clos 0) clos value)))
 
  )
