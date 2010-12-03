@@ -58,6 +58,16 @@
        (lambda (N proc)
          (if (= N 0) '() (pair (proc) (repeat (- N 1) proc)))))
 
+     (define (mem proc)
+       (let ([mt '()])
+         (lambda args
+           (let ([entry (assoc args mt)])
+             (if entry
+                 (cdr entry)
+                 (let ([val (cosh-apply proc args)])
+                   (set! mt (cons (cons args val) mt))
+                   val))))))     
+
      (define uniform-draw
        (lambda (lst) 
          (if (null? lst)

@@ -19,7 +19,7 @@
            obj))
 
      (define (mark-delayed thunk)
-       (pair 'delayed thunk))
+       (pair 'delayed (mem thunk)))
 
      ;;scalar implicature exs
 
