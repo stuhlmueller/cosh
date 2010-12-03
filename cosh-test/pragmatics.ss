@@ -23,7 +23,6 @@
        (lambda (thunk)
          (pair 'delayed thunk)))
 
-
      ;;scalar implicature exs
 
      ;;use partial knowledge form of belief formation.

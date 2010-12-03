@@ -12,7 +12,7 @@
  (define (with-preamble expr)
   `(begin
      ,@preamble
-     ,expr))
+     ,@expr))
 
  (define preamble
    '((define sample (lambda (thunk) (thunk)))
