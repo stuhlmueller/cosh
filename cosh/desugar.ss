@@ -263,6 +263,9 @@
        (make-lazy sexpr)
        `(list 'delayed (mem (lambda () ,(make-lazy sexpr))))))
 
+ (define (delay? expr) (tagged-list? expr 'delay))
+ (define (desugar-delay expr) `(pair 'delayed (mem (lambda () ,(de-sugar-all (second expr))))))
+
  ;;do the fragment grammar thing to an arbitrary expression.
  ;;FIXME make alpha flexible..
  ;; (define (fragmentize? expr) (tagged-list? expr 'fragmentize))
@@ -326,5 +329,7 @@
 
  (register-sugar! psmc-query? desugar-psmc-query 1)
  (register-sugar! mh-query/annealed-init? desugar-mh-query/annealed-init 1)
+
+ (register-sugar! delay? desugar-delay)
 
  )

@@ -7,21 +7,52 @@
         (cosh-test header)
         (cosh-test pragmatics))
 
+(define (test expr)
+  (map pretty-print
+       ((marginalize-expr header
+                          (with-preamble expr)) 10)))
+
 (define simple-expr
   '( (list (flip) (flip)) ))
 
 (define rejection-expr
-  '( (rejection-query
-      (define x (flip .5))
-      (define y (flip .5))
-      (list x y)
-      (cosh-or x y))) )
+  '( 
 
-(define (test expr)
-  (map pretty-print
-       ((marginalize-expr header
-                          (with-preamble expr)) 5)))
+    (define (foo n)
+      (rejection-query
+       (define x (flip .5))
+       x
+       (if (= n 0)
+           x
+           (cosh-or x (bar (- n 1))))))
+
+    (define (bar n)
+      (rejection-query
+       (define y (flip .5))
+       y
+       (cosh-or y
+                (foo n))))
+
+    (foo 3)
+
+    ))
+
+(define delay-expr
+  '(
+
+    (let* ([x1 (delay (flip))]
+           [x2 (delay (flip))]
+           [x3 (delay (flip))]
+           [x4 (delay (flip))]
+           [x5 (delay (flip))]
+           [x6 (delay (flip))]
+           [x7 (delay (flip))]           
+           [x8 (delay (flip))])
+      (force x1))
+
+    ))
 
 ;; (test simple-expr)
 ;; (test rejection-expr)
+;; (test delay-expr)
 (test pragmatics-expr)
