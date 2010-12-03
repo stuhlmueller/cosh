@@ -10,17 +10,6 @@
 
  (define pragmatics-expr
    '(
-     
-     (define (force obj)
-       (if (pair? obj)
-           (if (eq? (first obj) 'delayed)
-               (force ((rest obj)))
-               obj)
-           obj))
-
-     (define (mark-delayed thunk)
-       (pair 'delayed (mem thunk)))
-
      ;;scalar implicature exs
 
      ;;use partial knowledge form of belief formation.
@@ -32,9 +21,8 @@
             (force actual-state)
             (substate-priors)))
 
-     (define baserate
-       (lambda () 0.6))
-
+     (define (baserate) 0.6)
+     
      (define (substate-priors)
        (list (lambda () (flip (baserate)))
              (lambda () (flip (baserate)))
@@ -54,14 +42,14 @@
      ;;what is the speaker likely to say, given their informational access and an assumed state of the world?
      (define (speaker access state depth)
        (rejection-query
-        (define s (mark-delayed sentence-prior))
+        (define s (delay (sentence-prior)))
         (force s)
         (equal? (belief state access) (listener access s depth))))
      
      ;;what state of teh world will the listener infer, given what the speaker said and the speaker's informational access?
      (define (listener speaker-access sentence depth)
        (rejection-query
-        (define state (mark-delayed state-prior))
+        (define state (delay (state-prior)))
         (force state)
         (if (= 0 depth)
             ((force sentence) (force state)) ;;sentence is true of state.

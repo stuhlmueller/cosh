@@ -66,7 +66,14 @@
                  (cdr entry)
                  (let ([val (cosh-apply proc args)])
                    (set! mt (cons (cons args val) mt))
-                   val))))))     
+                   val))))))
+
+     (define (force obj)
+       (if (pair? obj)
+           (if (eq? (first obj) 'delayed)
+               (force ((rest obj)))
+               obj)
+           obj))     
 
      (define uniform-draw
        (lambda (lst) 
