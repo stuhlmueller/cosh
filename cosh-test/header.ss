@@ -36,11 +36,11 @@
 
      (define top
        (vector
-        (lambda (self v)
+        (lambda (self top-value)
           (begin
             (display "result: ")
-            (pretty-print v)        
-            v))
+            (pretty-print top-value)        
+            top-value))
         'top-code))
 
      (define cosh-apply

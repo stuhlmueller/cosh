@@ -39,10 +39,11 @@
    (filter (lambda (e) (not (tagged-list? e 'import)))
            expr))
 
- ;; need to desugar to turn it into an expression;
- ;; eval doesn't like defines
+ (define (local expr)
+   `((lambda () ,expr)))
+
  (define (evaluate expr)
-   (eval (de-sugar-all (begin-wrap (expr->body expr)))
+   (eval (local (begin-wrap (expr->body expr)))
          (expr->environment expr)))
 
  (define/curry (expr->cc-cps-thunk header expr)
