@@ -20,12 +20,6 @@
          (cosh desugar)
          (scheme-tools))
 
- ;; thunk -> iterations -> graph
- ;; -- requires thunk to be in cc-cps form
- (define marginalize-cc-cps-thunk
-   ($ marginalize-graph
-      cc-cps-thunk->graph))
-
  (define (header->reserved-words header)
    (let ([defines (filter (lambda (e) (tagged-list? e 'define)) header)])
      (map (lambda (d) (if (list? (second d)) (caadr d) (second d)))
@@ -46,6 +40,7 @@
    (eval (local (begin-wrap (expr->body expr)))
          (expr->environment expr)))
 
+ ;; (header, expr) -> thunk
  (define/curry (expr->cc-cps-thunk header expr)
    (evaluate
    `(,@header
@@ -53,11 +48,17 @@
        ,(transform (de-sugar-toplevel expr)
                    (header->reserved-words header))))))
 
+ ;; (header, expr) -> graph
  (define expr->graph
    ($ cc-cps-thunk->graph
       expr->cc-cps-thunk))
 
- ;; header -> expr -> iterations -> graph
+ ;; thunk -> iterations -> dist
+ (define marginalize-cc-cps-thunk
+   ($ marginalize-graph
+      cc-cps-thunk->graph)) 
+
+ ;; (header, expr) -> iterations -> dist
  (define marginalize-expr
    ($ marginalize-cc-cps-thunk
       expr->cc-cps-thunk))
