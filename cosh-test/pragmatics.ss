@@ -35,33 +35,34 @@
      (define (sentence-prior)
        (uniform-draw (list all-p some-p none-p)))
 
-     (define (all-p state) (all state))
-     (define (some-p state) (any state))
-     (define (none-p state) (not (some-p state)))
+     (define (all-p state) (all (force state)))
+     (define (some-p state) (any (force state)))
+     (define (none-p state) (not (some-p (force state))))
 
      ;;what is the speaker likely to say, given their informational access and an assumed state of the world?
      (define (speaker access state depth)
        (rejection-query
         (define s (delay (sentence-prior)))
-        (force s)
-        (equal? (belief state access) (listener access s depth))))
+        s
+        (equal? (belief state access)
+                (force (listener access s depth)))))
      
      ;;what state of teh world will the listener infer, given what the speaker said and the speaker's informational access?
      (define (listener speaker-access sentence depth)
        (rejection-query
         (define state (delay (state-prior)))
-        (force state)
+        state
         (if (= 0 depth)
-            ((force sentence) (force state)) ;;sentence is true of state.
+            ((force sentence) state) ;;sentence is true of state.
             (equal? (force sentence)
-                    (speaker speaker-access state (- depth 1))) ;;sentence is what speaker would have said given state and access.
+                    (force (speaker speaker-access state (- depth 1)))) ;;sentence is what speaker would have said given state and access.
             )))
      
      ;;(define (random-access access N) (if (= 0 num) ...))
      (define (num-true state)
        (sum (map (lambda (x) (if x 1 0)) state)))
      
-     (num-true (force (listener '(#t #t #t) some-p 2)))
+     (num-true (force (listener '(#t #t #t) some-p 1)))
 
      ))
 

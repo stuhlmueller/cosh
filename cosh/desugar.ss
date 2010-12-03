@@ -261,7 +261,7 @@
  (define (delay-expr sexpr)
    (if (or (lambda? sexpr) (and (mem? sexpr) (lambda? (first sexpr))))
        (make-lazy sexpr)
-       `(list 'delayed (mem (lambda () ,(make-lazy sexpr))))))
+       `(pair 'delayed (mem (lambda () ,(make-lazy sexpr))))))
 
  (define (delay? expr) (tagged-list? expr 'delay))
  (define (desugar-delay expr) `(pair 'delayed (mem (lambda () ,(de-sugar-all (second expr))))))

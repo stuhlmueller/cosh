@@ -52,7 +52,20 @@
 
     ))
 
+(define rejection-delay-expr
+  '(
+
+    (rejection-query
+     (define x (delay (flip)))
+     (define y (flip))
+     (define z (flip))
+     (list (force x))
+     (cosh-or y z))
+
+    ))
+
 ;; (test simple-expr)
 ;; (test rejection-expr)
 ;; (test delay-expr)
+;; (test rejection-delay-expr)
 (test pragmatics-expr)
