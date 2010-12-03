@@ -16,7 +16,8 @@
          (scheme-tools)
          (scheme-tools graph)
          (scheme-tools queue)
-         (scheme-tools mem))
+         (scheme-tools mem)
+         (scheme-tools hash))
 
  (define (leaf? node)
    (not (continuation? node)))
@@ -24,7 +25,7 @@
  (define (get-scorer graph)
    (letrec ([scorer
              (mem
-              (lambda (node t)
+              (lambda (t node)
                 (if (or (= t 0)
                         (equal? node (graph:root graph)))
                     1.0
@@ -33,18 +34,24 @@
                           1.0
                           (sum (map (lambda (link)
                                       (* (link->weight link)
-                                         (scorer (link->target link) (- t 1))))
+                                         (scorer (- t 1) (link->target link))))
                                     links)))))))])
      scorer))
 
  (define (get-watcher)
-   (let ([seen '()])
+   (let ([time-tables (make-hash-table)])
      (lambda (node t)
-       (let* ([key (pair t node)]
-              [val (find (lambda (node) (equal? node key)) seen)])
-         (when (eq? val #f)
-               (set! seen (cons key seen)))
-         val))))
+       (let ([time-table (hash-table-ref time-tables
+                                         t
+                                         (lambda () (let ([table (make-hash-table)])
+                                                 (hash-table-set! time-tables t table)
+                                                 table)))])
+         (let ([seen (hash-table-ref/default time-table
+                                             node
+                                             #f)])
+           (when (eq? seen #f)
+                 (hash-table-set! time-table node #t))
+           seen)))))
 
  (define/curry (marginalize-graph graph iterations)
    (let ([root (graph:root graph)]
@@ -66,7 +73,7 @@
            (let ([node (dequeue! queue)])
              (if (leaf? node)
                  (loop t
-                       (pair (pair node (score node t))
+                       (pair (pair node (score t node))
                              marginal-scores)
                        queue)
                  (begin

@@ -29,7 +29,7 @@
      (define (belief actual-state access)
        (map (lambda (ac st pr) (if ac st (sample pr)))
             access
-            actual-state
+            (force actual-state)
             (substate-priors)))
 
      (define baserate
@@ -56,7 +56,7 @@
        (rejection-query
         (define s (mark-delayed sentence-prior))
         (force s)
-        (equal? (belief (force state) access) (listener access s depth))))
+        (equal? (belief state access) (listener access s depth))))
      
      ;;what state of teh world will the listener infer, given what the speaker said and the speaker's informational access?
      (define (listener speaker-access sentence depth)
