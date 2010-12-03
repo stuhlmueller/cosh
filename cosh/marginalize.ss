@@ -50,15 +50,19 @@
    (let ([root (graph:root graph)]
          [score (get-scorer graph)]
          [seen? (get-watcher)])
+     (pe "marginalization ...\n"
+         "iteration " 1 "/" iterations "\n")
      (let loop ([t 1]
                 [marginal-scores '()]
                 [queue (make-queue root)])
        (if (queue-empty? queue)
            (if (= t iterations)
                marginal-scores
-               (loop (+ t 1)
-                     '()
-                     (make-queue root)))
+               (begin
+                 (pe "iteration " (+ t 1) "/" iterations "\n")
+                 (loop (+ t 1)
+                       '()
+                       (make-queue root))))
            (let ([node (dequeue! queue)])
              (if (leaf? node)
                  (loop t

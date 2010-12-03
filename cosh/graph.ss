@@ -54,12 +54,16 @@
      graph))
 
  (define (explode graph)
-   (let ([queue (make-queue (graph:root graph))])
-     (let loop ([graph graph])
-       (if (queue-empty? queue)
-           ;; (call&return display-graph graph)
-           graph
-           (loop (step graph queue))))))
+   (pe "building graph ...\n")
+   (let ([new-graph 
+          (let ([queue (make-queue (graph:root graph))])
+            (let loop ([graph graph])
+              (if (queue-empty? queue)
+                  graph
+                  (loop (step graph queue)))))])
+     (pe "done. size: " (graph-size graph) "\n")
+     graph))
+     
  
  (define cc-cps-thunk->graph
    ($ add-root
