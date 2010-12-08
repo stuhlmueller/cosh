@@ -9,8 +9,8 @@
 
 (define (test expr)
   (map pretty-print
-       ((marginalize-expr header
-                          (with-preamble expr)) 10)))
+       (marginalize-expr header
+                         (with-preamble expr))))
 
 (define simple-expr
   '( (list (flip) (flip)) ))

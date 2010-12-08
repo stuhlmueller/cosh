@@ -45,7 +45,7 @@
         (define s (delay (sentence-prior)))
         s
         (equal? (belief state access)
-                (force (listener access s depth)))))
+                (force (listener access s depth))))) 
      
      ;;what state of teh world will the listener infer, given what the speaker said and the speaker's informational access?
      (define (listener speaker-access sentence depth)
@@ -54,15 +54,15 @@
         state
         (if (= 0 depth)
             ((force sentence) state) ;;sentence is true of state.
-            (equal? (force sentence)
-                    (force (speaker speaker-access state (- depth 1)))) ;;sentence is what speaker would have said given state and access.
+            (equal? (force sentence) ;;sentence is what speaker would have said given state and access.
+                    (force (speaker speaker-access state (- depth 1))))
             )))
      
      ;;(define (random-access access N) (if (= 0 num) ...))
      (define (num-true state)
        (sum (map (lambda (x) (if x 1 0)) state)))
      
-     (num-true (force (listener '(#t #t #t) some-p 1)))
+     (num-true (force (listener '(#t #t #t) some-p 2)))
 
      ))
 

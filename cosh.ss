@@ -53,12 +53,12 @@
    ($ cc-cps-thunk->graph
       expr->cc-cps-thunk))
 
- ;; thunk -> iterations -> dist
+ ;; thunk -> dist
  (define marginalize-cc-cps-thunk
-   ($ marginalize-graph
+   ($ marginalize-graph/linsolve
       cc-cps-thunk->graph)) 
 
- ;; (header, expr) -> iterations -> dist
+ ;; (header, expr) -> dist
  (define marginalize-expr
    ($ marginalize-cc-cps-thunk
       expr->cc-cps-thunk))
