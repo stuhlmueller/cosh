@@ -14,6 +14,7 @@
 
  (import (rnrs)
          (rnrs mutable-pairs)
+         (cosh watcher)
          (cosh continuation)
          (scheme-tools)
          (scheme-tools solve)
@@ -41,21 +42,6 @@
                                          (scorer (- t 1) (link->target link))))
                                     links)))))))])
      scorer))
-
- (define (get-watcher)
-   (let ([time-tables (make-hash-table)])
-     (lambda (node t)
-       (let ([time-table (hash-table-ref time-tables
-                                         t
-                                         (lambda () (let ([table (make-hash-table)])
-                                                 (hash-table-set! time-tables t table)
-                                                 table)))])
-         (let ([seen (hash-table-ref/default time-table
-                                             node
-                                             #f)])
-           (when (eq? seen #f)
-                 (hash-table-set! time-table node #t))
-           seen)))))
 
  (define/curry (marginalize-graph graph iterations)
    (let ([root (graph:root graph)]
@@ -121,7 +107,8 @@
                            (when (not (seen? node 1))
                                  (enqueue-if-new! equal? queue node)))
                          (graph:children graph node)))
-                ;; return equation: marginal prior (expected number of visits) of node is sum of parent priors
+                ;; return equation: marginal prior (expected number of
+                ;; visits) of node is weighted sum of parent priors
                 `(= ,(node->variable-name node)
                     ,(if (equal? node (graph:root graph))
                          1.0
