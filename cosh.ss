@@ -55,7 +55,7 @@
 
  ;; thunk -> dist
  (define marginalize-cc-cps-thunk
-   ($ marginalize-graph/linsolve
+   ($ marginalize-graph
       cc-cps-thunk->graph)) 
 
  ;; (header, expr) -> dist
