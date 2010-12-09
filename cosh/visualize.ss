@@ -29,12 +29,14 @@
  (define (draw-leaf node)
    (ubi-node (object->id node) (->string node))
    (ubi-node-attrib (object->id node) "shape" "sphere")
-   (ubi-node-attrib (object->id node) "color" "#00ff00"))
+   (ubi-node-attrib (object->id node) "color" "#00ff00")
+   (ubi-node-attrib (object->id node) "size" "2.0"))
 
  (define (draw-root node)
    (ubi-node (object->id node) "")
    (ubi-node-attrib (object->id node) "shape" "sphere")
-   (ubi-node-attrib (object->id node) "color" "#ff0000"))
+   (ubi-node-attrib (object->id node) "color" "#ff0000")
+   (ubi-node-attrib (object->id node) "size" "2.0"))
 
  (define (draw-node graph node)
    (cond [(graph:root? graph node) (draw-root node)]
@@ -48,7 +50,7 @@
    (ubi-edge-attrib "oriented"
                     "true")
    (ubi-edge-attrib "fontcolor"
-                    "#ffffff88")
+                    "#aaaaaa")
    (ubi-edge-attrib "arrow"
                     "true")
    (ubi-edge-attrib "width"
