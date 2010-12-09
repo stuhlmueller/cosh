@@ -3,6 +3,7 @@
 (import (rnrs)
         (scheme-tools)
         (cosh)
+        (cosh visualize)
         (cosh-test preamble)
         (cosh-test header)
         (cosh-test pragmatics))
@@ -11,6 +12,12 @@
   (map pretty-print
        (marginalize-expr header
                          (with-preamble expr))))
+
+(define (show expr interactive)
+  (visualize-graph
+   (expr->graph header
+                (with-preamble expr))
+   interactive))
 
 (define simple-expr
   '( (list (flip) (flip)) ))
@@ -64,8 +71,9 @@
 
     ))
 
+(show pragmatics-expr #f)
 ;; (test simple-expr)
 ;; (test rejection-expr)
 ;; (test delay-expr)
 ;; (test rejection-delay-expr)
-(test pragmatics-expr)
+;; (test pragmatics-expr)

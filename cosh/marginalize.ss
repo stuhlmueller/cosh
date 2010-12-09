@@ -23,13 +23,14 @@
          (scheme-tools hash)
          (scheme-tools object-id))
 
- (define (leaf? node)
-   (not (continuation? node)))
-
  (define (node->variable-name node)
-   (if (continuation? node)
-       (continuation:closure-id node)
-       (object->id node)))
+   (sym+num 'n
+            (if (continuation? node)
+                (continuation:closure-id node)
+                (object->id node))))
+
+ (define (variable-name->node name)
+   (id->object (sym+num->num name)))
 
  (define (marginalize-graph graph)
   (pe "marginalization using solver ...\n")
@@ -37,7 +38,8 @@
     (let ([marginal-values (solve-eqns eqn)])
       (pe "looking up leaf values ...\n")
       (let ([nodename->prior (alist->hash-table marginal-values)])
-        (map (lambda (leaf-name) (pair (id->object leaf-name) (hash-table-ref/default nodename->prior leaf-name 'unknown)))
+        (map (lambda (leaf-name) (pair (variable-name->node leaf-name)
+                                  (hash-table-ref/default nodename->prior leaf-name 'unknown)))
              leaves)))))
 
  (define (graph->eqn graph)
@@ -45,7 +47,8 @@
    (values
     leaves
     (map (lambda (node)
-           (when (null? (graph:children graph node)) (set! leaves (cons (node->variable-name node) leaves)))
+           (when (graph:leaf? graph node)
+                 (set! leaves (cons (node->variable-name node) leaves)))
            `(= ,(node->variable-name node)
                ,(if (equal? node (graph:root graph))
                     1.0

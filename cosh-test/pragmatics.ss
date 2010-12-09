@@ -62,7 +62,7 @@
      (define (num-true state)
        (sum (map (lambda (x) (if x 1 0)) state)))
      
-     (num-true (force (listener '(#t #t #t) some-p 2)))
+     (num-true (force (listener '(#t #t #t) some-p 1)))
 
      ))
 
