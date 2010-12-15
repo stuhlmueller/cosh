@@ -39,7 +39,8 @@
      (define (some-p state) (any (force state)))
      (define (none-p state) (not (some-p (force state))))
 
-     ;;what is the speaker likely to say, given their informational access and an assumed state of the world?
+     ;;what is the speaker likely to say, given their informational
+     ;;access and an assumed state of the world?
      (define (speaker access state depth)
        (rejection-query
         (define s (delay (sentence-prior)))
@@ -47,7 +48,8 @@
         (equal? (belief state access)
                 (force (listener access s depth))))) 
      
-     ;;what state of teh world will the listener infer, given what the speaker said and the speaker's informational access?
+     ;;what state of teh world will the listener infer, given what the
+     ;;speaker said and the speaker's informational access?
      (define (listener speaker-access sentence depth)
        (rejection-query
         (define state (delay (state-prior)))

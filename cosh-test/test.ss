@@ -19,30 +19,62 @@
                 (with-preamble expr))
    interactive))
 
+(define (show-live expr wait)
+  (visualize-sampling
+   (expr->graph header
+                (with-preamble expr))
+   wait))
+
 (define simple-expr
   '( (list (flip) (flip)) ))
 
 (define rejection-expr
   '( 
 
-    (define (foo n)
+    (define (foo z n)
       (rejection-query
-       (define x (flip .5))
+       (define x (delay (flip .5)))
        x
        (if (= n 0)
            x
-           (cosh-or x (bar (- n 1))))))
+           (equal? 
+            (force (bar x (- n 1)))
+            (force z)
+            ))))
 
-    (define (bar n)
+    (define (bar z n)
       (rejection-query
-       (define y (flip .5))
+       (define y (delay (flip .5)))
        y
-       (cosh-or y
-                (foo n))))
+       (equal? 
+        (force (foo y n))
+        (force z)
+        )))
 
-    (foo 3)
+    (force (bar #t 3))
 
     ))
+
+;; this illustrates the problem of forcing values "from above" (here:
+;; z) in a query, and then, after rejection, losing the advantage of
+;; laziness (delayed evaluation of values further up).
+(define simple-rejection-expr
+  '(
+
+    (define (foo z n)
+      (rejection-query
+       (define x (delay (flip)))
+       x
+       (if (= n 0)
+           #t
+           (equal? (force (foo x (- n 1)))
+                   (force z)))))
+
+    (force (foo #t 2))
+    
+    ))
+
+
 
 (define delay-expr
   '(
@@ -71,7 +103,8 @@
 
     ))
 
-(show pragmatics-expr #f)
+(show-live simple-rejection-expr 0.0)
+;; (show-live pragmatics-expr #f)
 ;; (test simple-expr)
 ;; (test rejection-expr)
 ;; (test delay-expr)
