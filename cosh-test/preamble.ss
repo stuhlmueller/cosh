@@ -23,6 +23,13 @@
            (if b
                #t
                #f)))
+     
+     (define (cosh-or* args)
+       (if (null? args)
+           #f
+           (if (car args)
+               #t
+               (cosh-or* (cdr args)))))
 
      (define (cosh-and a b)
        (if a
@@ -30,6 +37,13 @@
                #t
                #f)
            #f))
+
+     (define (cosh-and* args)
+       (if (null? args)
+           #t
+           (if (car args)
+               (cosh-and* (cdr args))
+               #f)))
 
      (define all
        (lambda (lst)
@@ -80,6 +94,9 @@
          (if (null? lst)
              '()
              (list-ref lst (sample-integer (length lst))))))
+
+     (define (multinomial vals probs)
+       (list-ref vals (sample-discrete probs)))
 
      (define (map proc . lsts)
        (if (null? (rest lsts)) (single-map proc (first lsts)) (multi-map proc lsts)))

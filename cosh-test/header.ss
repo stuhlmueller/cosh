@@ -14,6 +14,7 @@
              (only (scheme-tools) pair rest sum pretty-print)
              (only (church external math-env) random-real random-integer randomize-rng)
              (except (_srfi :1) any)
+             (only (ikarus) void)
              (cosh continuation))
 
      (define flip
@@ -33,6 +34,15 @@
                              (iota n)
                              (make-list n (/ 1.0 n))))
         'sample-integer-code))
+
+     (define sample-discrete
+       (vector
+        (lambda (self k probs)
+          (make-continuation k
+                             (iota (length probs))
+                             probs))
+        'sample-discrete-code))
+          
 
      (define top
        (vector
