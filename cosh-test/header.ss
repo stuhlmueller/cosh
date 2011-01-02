@@ -11,6 +11,7 @@
  (define header
    '((import (except (rnrs) map)
              (rnrs mutable-pairs)
+             (cosh-test utils)
              (only (scheme-tools) pair rest sum pretty-print)
              (only (church external math-env) random-real random-integer randomize-rng)
              (except (_srfi :1) any)
