@@ -271,12 +271,20 @@
    `(DPmem 1.0 (lambda ,(lambda-parameters sexpr) (if (flip) ,(lambda-body sexpr) (list 'delayed (lambda () ,(lambda-body sexpr)))))))
 
 (define (keyword? expr) (or (tagged-list? expr 'or)
-                          (tagged-list? expr 'and)))
+                            (tagged-list? expr 'and)
+                            (tagged-list? expr 'apply)))
 (define (desugar-keyword expr)
   (cond ((eq? (car expr) 'or)
-         (cons 'cosh-or (cdr expr)))
+         (if (= (length expr) 3)
+             `(cosh-or ,@(cdr expr))
+             `(cosh-or* (list ,@(cdr expr)))))
         ((eq? (car expr) 'and)
-         (cons 'cosh-and (cdr expr)))))
+         (if (= (length expr) 3)
+             `(cosh-and ,@(cdr expr))
+             `(cosh-and* (list ,@(cdr expr)))))
+        ((eq? (car expr) 'apply)
+         `(cosh-apply ,@(cdr expr)))
+        ))
 
 
 
