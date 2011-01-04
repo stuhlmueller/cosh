@@ -18,6 +18,10 @@
  (define preamble
    '((define sample (lambda (thunk) (thunk)))
 
+     (define true #t)
+
+     (define false #f)
+     
      (define (cosh-or a b)
        (if a
            #t
