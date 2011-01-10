@@ -266,30 +266,28 @@
  (define (delay? expr) (tagged-list? expr 'delay))
  (define (desugar-delay expr) `(pair 'delayed (mem (lambda () ,(de-sugar-all (second expr))))))
 
- ;;do the fragment grammar thing to an arbitrary expression.
- ;;FIXME make alpha flexible..
- ;; (define (fragmentize? expr) (tagged-list? expr 'fragmentize))
- ;; (define (desugar-fragmentize expr) (make-fragment (de-sugar-all (second expr))))
- ;; (define (make-fragment sexpr)
- ;;   (cond
- ;;    ((or (begin? sexpr) (mem? sexpr)) (map make-fragment sexpr))
- ;;    ((quoted? sexpr) sexpr)
- ;;    ;((definition? sexpr) `(define ,(second sexpr)  ,(stochastic-delay-expr (third sexpr))))
- ;;    ((letrec? sexpr) `(letrec ,(map (lambda (binding) (list (first binding) (stochastic-delay-expr (second binding))))
- ;;                                    (second sexpr))
- ;;                        ,(make-fragment (third sexpr))))
- ;;    ((lambda? sexpr) `(DPmem 1.0 (lambda ,(lambda-parameters sexpr) ,(make-fragment (lambda-body sexpr)))))
- ;;    ((if? sexpr) `(if ,(make-fragment (second sexpr)) ,(stochastic-delay-expr (third sexpr)) ,(stochastic-delay-expr (fourth sexpr))))
- ;;    ((application? sexpr) `(,(make-fragment (first sexpr)) ,@(map stochastic-delay-expr (rest sexpr))))
- ;;    (else sexpr) ))
- ;; (define (stochastic-delay-expr sexpr)
- ;;   `(let ((de (list 'delayed (lambda () ,(make-fragment sexpr)))))
- ;;      (if (flip) de (force de))))
-
  (define (fragment-lambda? expr) (tagged-list? expr 'f-lambda))
  (define (desugar-fragment-lambda sexpr)
    `(DPmem 1.0 (lambda ,(lambda-parameters sexpr) (if (flip) ,(lambda-body sexpr) (list 'delayed (lambda () ,(lambda-body sexpr)))))))
-   
+
+(define (keyword? expr) (or (tagged-list? expr 'or)
+                            (tagged-list? expr 'and)
+                            (tagged-list? expr 'apply)))
+(define (desugar-keyword expr)
+  (cond ((eq? (car expr) 'or)
+         (if (= (length expr) 3)
+             `(cosh-or ,@(cdr expr))
+             `(cosh-or* (list ,@(cdr expr)))))
+        ((eq? (car expr) 'and)
+         (if (= (length expr) 3)
+             `(cosh-and ,@(cdr expr))
+             `(cosh-and* (list ,@(cdr expr)))))
+        ((eq? (car expr) 'apply)
+         `(cosh-apply ,@(cdr expr)))
+        ))
+
+
+
  (register-sugar! fragment-lambda? desugar-fragment-lambda)
  (register-sugar! lazify? desugar-lazify)
  ;(register-sugar! fragmentize? desugar-fragmentize)
@@ -319,6 +317,7 @@
  (register-sugar! define-fn? desugar-define-fn)
  (register-sugar! seq-with-load? expand-loads)
  (register-sugar! when? desugar-when)
+(register-sugar! keyword? desugar-keyword)
 
   ;;syntacic sugar query forms:
  (register-query-sugar 'mh-query)
