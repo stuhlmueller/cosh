@@ -69,6 +69,9 @@
                ((rest val))
                (rejection-query nfqp)))))
 
+     (define exact-query
+       (lambda (nfqp) (rejection-query nfqp)))
+
      (define repeat
        (lambda (N proc)
          (if (= N 0) '() (pair (proc) (repeat (- N 1) proc)))))
