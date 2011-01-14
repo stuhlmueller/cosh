@@ -2,9 +2,6 @@
 
 ;; Given graph, compute marginal probabilities.
 
-;; fixme:
-;; - log space
-
 (library
 
  (cosh marginalize)
