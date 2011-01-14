@@ -6,7 +6,7 @@ Cosh is a Church implementation that uses dynamic programming based on continuat
 
 0. Install [git](http://git-scm.com/) if you don't have it.
 
-1. Follow the [instructions on the Church wiki](http://projects.csail.mit.edu/church/wiki/Installation) to Install the development version of [ikarus scheme](http://bazaar.canonical.com/en/) with foreign function interface enabled and [MIT-Church](https://github.com/stuhlmueller/mit-church) (for srfis and math-env).
+1. Follow the [instructions on the Church wiki](http://projects.csail.mit.edu/church/wiki/Installation) to install the development version of [ikarus scheme](http://bazaar.canonical.com/en/) with foreign function interface enabled and [MIT-Church](https://github.com/stuhlmueller/mit-church) (for srfis and math-env).
 
 2. Install scheme-tools:
 
