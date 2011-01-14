@@ -54,7 +54,7 @@
                     1.0
                     (let ([links (graph:parent-links graph node)])
                       (if (null? links)
-                          (error) ;;this should never happen
+                          (error node "no parent-links found!")
                           `(+ ,@(map (lambda (link) `(* ,(link->weight link)
                                                         ,(node->variable-name (link->target link))))
                                      links)))))))
