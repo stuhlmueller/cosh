@@ -21,6 +21,14 @@
              (cosh continuation)
              (cosh))
 
+     ;; Return is used to make more explicit where we don't call the
+     ;; continuation but instead stop and return a value directly to
+     ;; the calling top level.
+     (define (return arg . args)
+       (if (null? args)
+           arg
+           (cons arg args)))
+
      ;; Marginalizes cc-cps-proc with given args, stores resulting
      ;; distribution in cache table, and returns the distribution.
      (define (marginalize&cache-dist cache cc-cps-proc args)
@@ -53,28 +61,31 @@
      (define flip
        (vector
         (lambda (self k . p)
-          (make-continuation k
-                             (list #t #f)
-                             (if (not (null? p))
-                                 (list (first p) (- 1.0 (first p)))
-                                 (list .5 .5))))
-        'flip-code))
+          (return
+           (make-continuation k
+                              (list #t #f)
+                              (if (not (null? p))
+                                  (list (first p) (- 1.0 (first p)))
+                                  (list .5 .5)))))
+        'flip))
 
      (define sample-integer
        (vector
         (lambda (self k n)
-          (make-continuation k
-                             (iota n)
-                             (make-list n (/ 1.0 n))))
-        'sample-integer-code))
+          (return
+           (make-continuation k
+                              (iota n)
+                              (make-list n (/ 1.0 n)))))
+        'sample-integer))
 
      (define sample-discrete
        (vector
         (lambda (self k probs)
-          (make-continuation k
-                             (iota (length probs))
-                             probs))
-        'sample-discrete-code))
+          (return
+           (make-continuation k
+                              (iota (length probs))
+                              probs)))
+        'sample-discrete))
           
 
      (define top
@@ -83,14 +94,14 @@
           (begin
             (display "result: ")
             (pretty-print top-value)        
-            top-value))
-        'top-code))
+            (return top-value)))
+        'top))
 
      (define cosh-apply
        (vector
         (lambda (self k proc list-of-args)
           (apply (vector-ref proc 0) (append (list proc k) list-of-args)))
-        'apply-code))
+        'apply))
 
      (randomize-rng)))
    
