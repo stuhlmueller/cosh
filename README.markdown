@@ -18,6 +18,8 @@ Cosh is a Church implementation that uses dynamic programming based on continuat
   
     4. Add the scheme-tools directory to your <code>$IKARUS_LIBRARY_PATH</code>. In general, you can add a directory to <code>$IKARUS_LIBRARY_PATH</code> by changing into the directory and typing <code>echo -e "\nexport IKARUS_LIBRARY_PATH=\`pwd\`:\$IKARUS_LIBRARY_PATH" >> ~/.bashrc</code>. Replace <code>~/.bashrc</code> with the location of your shell config file.
 
+    5. Add the scheme-tools/bin directory to your <code>$PATH</code>, e.g. by changing into the directory and typing <code>echo -e "\nexport PATH=\`pwd\`:\$PATH" >> ~/.bashrc</code>.
+
 4. Install [scheme-transforms](https://github.com/stuhlmueller/scheme-transforms):
 
     1. Clone the repository using <code>git clone git://github.com/stuhlmueller/scheme-transforms.git</code>.
