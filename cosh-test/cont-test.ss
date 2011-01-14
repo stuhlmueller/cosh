@@ -3,8 +3,8 @@
 (import (rnrs)
         (scheme-tools)
         (cosh)
-        (cosh-test preamble)
-        (cosh-test header)
+        (cosh preamble)
+        (cosh header)
         (cosh-test pragmatics)
         (cosh continuation))
 

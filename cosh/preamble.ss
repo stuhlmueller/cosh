@@ -2,7 +2,7 @@
 
 (library
 
- (cosh-test preamble)
+ (cosh preamble)
 
  (export preamble
          with-preamble)

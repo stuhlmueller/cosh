@@ -4,8 +4,8 @@
         (scheme-tools)
         (cosh)
         (cosh visualize)
-        (cosh-test preamble)
-        (cosh-test header)
+        (cosh preamble)
+        (cosh header)
         (cosh-test pragmatics))
 
 (define (test expr)
@@ -94,19 +94,44 @@
 (define rejection-delay-expr
   '(
 
-    (rejection-query
+    (exact-query
      (define x (delay (flip)))
      (define y (flip))
-     (define z (flip))
-     (list (force x))
+     (define z true)
+     (list (force y))
      (cosh-or y z))
 
     ))
 
-(show-live simple-rejection-expr 0.0)
+(define marginalize-test
+  '( (define foo (marginalize
+                      (lambda (arg) (and (flip arg) (flip 0.5)))) )
+         (or (foo 0.1) (foo 0.8) (foo 0.1))
+         ))
+
+(define marginalize-test-1
+  '((define (flipper) (all (repeat 3 flip)))
+    (define foo (marginalize
+                 (lambda (arg) (flipper))))
+    (define foo2 (marginalize
+                  (lambda (arg) (flipper))))
+    (or (foo 0.1) (foo 0.8) (foo2 0.1))
+    ))
+
+
+(define marginalize-test-2
+ '((define (flipper) (all (repeat 10 flip)))
+  (define foo (marginalize
+                (lambda (arg) (flipper))))
+  (define foo2 (marginalize
+                (lambda (arg) (flipper))))
+  (or (foo 0.1) (foo 0.8) (foo2 0.2))
+  ))
+
+;; (show-live simple-rejection-expr 0.0)
 ;; (show-live pragmatics-expr #f)
 ;; (test simple-expr)
 ;; (test rejection-expr)
 ;; (test delay-expr)
-;; (test rejection-delay-expr)
+(test marginalize-test-1)
 ;; (test pragmatics-expr)

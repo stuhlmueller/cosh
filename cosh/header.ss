@@ -2,7 +2,7 @@
 
 (library
 
- (cosh-test header)
+ (cosh header)
 
  (export header)
 
