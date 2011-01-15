@@ -15,12 +15,12 @@
 
  (import (rnrs)
          (rnrs eval)
-         (_srfi :1)
          (transforms)
          (cosh marginalize)
          (cosh graph)
          (cosh desugar)
-         (scheme-tools))
+         (scheme-tools)
+         (scheme-tools srfi-compat :1))
 
  (define (header->reserved-words header)
    (let ([defines (filter (lambda (e) (tagged-list? e 'define)) header)])

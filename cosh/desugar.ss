@@ -16,7 +16,7 @@
 
  (import (rnrs)
          (scheme-tools)
-         (_srfi :1))
+         (scheme-tools srfi-compat :1))
  
 ;;;some syntax utils
  (define (mem? sexpr) (tagged-list? sexpr 'mem))
@@ -31,7 +31,7 @@
  (define (letrec? exp) (tagged-list? exp 'letrec))
 
 ;;;include paths
- (define include-paths  (list "./" "include/" "./church/")) ;;FIXME: include scheme search-path?
+ (define include-paths  (list "./" "include/")) ;;FIXME: include scheme search-path?
  ;;(append (list "./" "include/") (map (lambda (search-path) (string-append search-path "/include/")) (search-paths))))
 
                                         ; goes through a list of library paths and opens
@@ -39,7 +39,7 @@
  (define (open-included-file filename)
    (define (loop-through-paths path-list)
      (if (null? path-list)
-         (error "open-included-file" (string-append "File " filename " not found on Church include paths."))
+         (error "open-included-file" (string-append "File " filename " not found on Cosh include paths."))
          (if (file-exists? (string-append (first path-list) filename))
              (open-input-file (string-append (first path-list) filename))
              (loop-through-paths (rest path-list)))))

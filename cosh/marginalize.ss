@@ -34,7 +34,7 @@
   (let-values ([(leaves eqn) (graph->eqn graph)])
     (let ([marginal-values (solve-eqns eqn)])
       (pe "looking up leaf values ...\n")
-      (let ([nodename->prior (alist->hash-table marginal-values)])
+      (let ([nodename->prior (alist->hash-table marginal-values finitize-equal? finitize-hash)])
         (map (lambda (leaf-name) (pair (variable-name->node leaf-name)
                                   (hash-table-ref/default nodename->prior leaf-name 'unknown)))
              leaves)))))

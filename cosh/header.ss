@@ -14,10 +14,10 @@
              (cosh-test utils)
              (scheme-tools object-id)
              (only (scheme-tools) pair rest sum pretty-print pe sym+num)
-             (only (church external math-env) random-real random-integer randomize-rng)
-             (except (_srfi :1) any)
-             (except (_srfi :69) string-ci-hash string-hash)
-             (only (ikarus) void)
+             (only (scheme-tools math) random-real random-integer randomize-rng)
+             (except (scheme-tools srfi-compat :1) any)
+             (scheme-tools hash)
+             (only (scheme-tools external) void)
              (cosh continuation)
              (cosh))
 
@@ -47,7 +47,7 @@
      (define marginalize
        (vector
         (lambda (self k cc-cps-proc)
-          (let ([dist-cache (make-hash-table)]
+          (let ([dist-cache (make-equal-hash-table)]
                 [proc-id (object->id cc-cps-proc)])
             ((vector-ref k 0) k
              (vector

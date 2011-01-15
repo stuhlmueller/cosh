@@ -8,8 +8,8 @@
          visualize-sampling)
 
  (import (rnrs)
-         (only (church external math-env) sample-discrete)
-         (only (_srfi :1) filter-map)
+         (only (scheme-tools math) sample-discrete)
+         (only (scheme-tools srfi-compat :1) filter-map)
          (cosh continuation)
          (cosh watcher)
          (scheme-tools)

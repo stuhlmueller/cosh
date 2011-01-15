@@ -16,8 +16,8 @@
          call-continuation)
 
  (import (rnrs)
-         (_srfi :1)
          (scheme-tools)
+         (scheme-tools srfi-compat :1)
          (scheme-tools deepcopy)
          (scheme-tools object-id))
 
