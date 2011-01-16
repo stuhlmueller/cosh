@@ -51,10 +51,10 @@
                 [proc-id (object->id cc-cps-proc)])
             ((vector-ref k 0) k
              (vector
-              (lambda (self k . args)
+              (lambda (self k1 . args)
                 (let* ([dist-cacher (lambda () (marginalize&cache-dist dist-cache cc-cps-proc args))]
                        [dist (hash-table-ref dist-cache args dist-cacher)])
-                  (make-continuation k (map car dist) (map cdr dist))) )
+                  (make-continuation k1 (map car dist) (map cdr dist))) )
               (sym+num 'marginalized-proc proc-id)))))
         'marginalizer))
 
