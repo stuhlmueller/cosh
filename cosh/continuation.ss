@@ -22,12 +22,12 @@
          (scheme-tools object-id))
 
  (define (make-continuation closure support scores)
-   (list 'cont (object->id closure) support scores))
+   (list 'cont (object->id (list closure support scores)) support scores))
  
  (define continuation:closure-id second)
  
  (define (continuation:closure cont)
-   (id->object (second cont)))
+   (first (id->object (second cont))))
  
  (define continuation:support third)
  
