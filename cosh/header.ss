@@ -19,15 +19,8 @@
              (scheme-tools hash)
              (only (scheme-tools external) void)
              (cosh continuation)
+             (cosh call)
              (cosh))
-
-     ;; Return is used to make more explicit where we don't call the
-     ;; continuation but instead stop and return a value directly to
-     ;; the calling top level.
-     (define (return arg . args)
-       (if (null? args)
-           arg
-           (cons arg args)))
 
      ;; Marginalizes cc-cps-proc with given args, stores resulting
      ;; distribution in cache table, and returns the distribution.
@@ -61,30 +54,27 @@
      (define flip
        (vector
         (lambda (self k . p)
-          (return
-           (make-continuation k
-                              (list #t #f)
-                              (if (not (null? p))
-                                  (list (first p) (- 1.0 (first p)))
-                                  (list .5 .5)))))
+          (make-continuation k
+                             (list #t #f)
+                             (if (not (null? p))
+                                 (list (first p) (- 1.0 (first p)))
+                                 (list .5 .5))))
         'flip))
 
      (define sample-integer
        (vector
         (lambda (self k n)
-          (return
-           (make-continuation k
-                              (iota n)
-                              (make-list n (/ 1.0 n)))))
+          (make-continuation k
+                             (iota n)
+                             (make-list n (/ 1.0 n))))
         'sample-integer))
 
      (define sample-discrete
        (vector
         (lambda (self k probs)
-          (return
-           (make-continuation k
-                              (iota (length probs))
-                              probs)))
+          (make-continuation k
+                             (iota (length probs))
+                             probs))
         'sample-discrete))
           
 
@@ -94,7 +84,7 @@
           (begin
             (display "result: ")
             (pretty-print top-value)        
-            (return top-value)))
+            top-value))
         'top))
 
      (define cosh-apply

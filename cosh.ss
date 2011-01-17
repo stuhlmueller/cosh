@@ -9,6 +9,7 @@
          marginalize-graph
          expr->graph
          expr->cc-cps-thunk
+         expr->return-thunk         
          expr->cc-cps-expr
          cc-cps-thunk->graph
          header->reserved-words)
@@ -42,16 +43,20 @@
    (eval (local (begin-wrap (expr->body expr)))
          (expr->environment expr)))
 
- (define (expr->cc-cps-expr header expr)
+ (define (expr->cc-cps-expr header expr with-returns)
    `(,@header
      (lambda ()
        ,(transform (de-sugar-toplevel expr)
-                   (header->reserved-words header)))))
+                   (header->reserved-words header)
+                   with-returns))))
 
  ;; (header, expr) -> thunk
- (define expr->cc-cps-thunk
-   ($ evaluate
-      expr->cc-cps-expr))
+ (define (expr->cc-cps-thunk header expr)
+   (evaluate (expr->cc-cps-expr header expr #f)))
+
+ ;; (header, expr) -> thunk 
+ (define (expr->return-thunk header expr)
+   (evaluate (expr->cc-cps-expr header expr #t)))
 
  ;; (header, expr) -> graph
  (define expr->graph

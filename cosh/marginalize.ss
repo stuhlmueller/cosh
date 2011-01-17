@@ -23,7 +23,7 @@
  (define (node->variable-name node)
    (sym+num 'n
             (if (continuation? node)
-                (continuation:closure-id node)
+                (continuation:id node)
                 (object->id node))))
 
  (define (variable-name->node name)

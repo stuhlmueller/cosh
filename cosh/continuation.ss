@@ -7,7 +7,7 @@
  (cosh continuation)
 
  (export make-continuation
-         continuation:closure-id
+         continuation:id
          continuation:closure
          continuation:support
          continuation:scores
@@ -24,10 +24,10 @@
  (define (make-continuation closure support scores)
    (list 'cont (object->id (list closure support scores)) support scores))
  
- (define continuation:closure-id second)
+ (define continuation:id second)
  
  (define (continuation:closure cont)
-   (first (id->object (second cont))))
+   (first (id->object (continuation:id cont))))
  
  (define continuation:support third)
  
@@ -37,8 +37,8 @@
    (tagged-list? obj 'cont))
 
  (define (continuations-equal? c1 c2)
-   (eq? (continuation:closure-id c1)
-        (continuation:closure-id c2)))
+   (eq? (continuation:id c1)
+        (continuation:id c2)))
 
  (define (call-continuation cont value)
    (let ([clos (deepcopy (continuation:closure cont))])
