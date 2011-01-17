@@ -31,3 +31,5 @@ Cosh is a Church implementation that uses dynamic programming based on continuat
     1. Clone the repository using <code>git clone git://github.com/stuhlmueller/cosh.git</code>.
   
     2. Add the cosh directory to your <code>$IKARUS_LIBRARY_PATH</code> (see above).
+
+    3. Add the cosh/bin directory to your <code>$PATH</code> (see above).
