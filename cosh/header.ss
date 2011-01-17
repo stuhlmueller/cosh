@@ -19,7 +19,7 @@
              (scheme-tools hash)
              (only (scheme-tools external) void)
              (cosh continuation)
-             (cosh call)
+             (cosh application)
              (cosh))
 
      ;; Marginalizes cc-cps-proc with given args, stores resulting
