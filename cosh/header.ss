@@ -46,7 +46,10 @@
              (vector
               (lambda (self k1 . args)
                 (let* ([dist-cacher (lambda () (marginalize&cache-dist dist-cache cc-cps-proc args))]
-                       [dist (hash-table-ref dist-cache args dist-cacher)])
+                       [dist (hash-table-ref dist-cache args dist-cacher)]
+                       (norm (sum (map rest dist)))
+                       (dist (map (lambda (x) (cons (car x) (/ (cdr x) norm))) dist))
+                       )
                   (make-continuation k1 (map car dist) (map cdr dist))) )
               (sym+num 'marginalized-proc proc-id)))))
         'marginalizer))
