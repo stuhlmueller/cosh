@@ -136,6 +136,9 @@
 
 ;; --------------------------------------------------------------------
 ;; Main logic
+;;
+;; FIXME: Make sure we are not doing duplicate work (make callbacks
+;; remember which values they have seen?)
 
 ;; Make graph, create a root node in graph, new callback registry,
 ;; then call build-graph.
