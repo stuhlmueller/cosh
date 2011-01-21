@@ -114,8 +114,8 @@
 
 (define (graph:add/link! graph last-node node link-promise)
   (let* ([is-new (not (graph:node-exists? graph node))]
-         [connect (if is-new graph:add-child! graph:link!)])
-    (connect graph
+         [connect! (if is-new graph:add-child! graph:link!)])
+    (connect! graph
              last-node
              node
              (link-promise->label link-promise)
