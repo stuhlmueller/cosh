@@ -181,7 +181,7 @@
 ;; subgraph, callback to continue with outer continuation when
 ;; terminal values are found; associate callback with application
 ;; subgraph root.
-;; If the delimited application root node is new, bulid graph from
+;; If the delimited application root node is new, build graph from
 ;; there. If not, just call callback on all existing terminal values.
 (define (build-graph:application graph node last-node)
   (let* ([subthunk (lambda () (call-app-with-cont node top-cont-closure))]
