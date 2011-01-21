@@ -7,6 +7,7 @@
  (export make-app
          app?
          call-app-with-cont
+         call-app-cont
          call-app
          apps-delimited-equal?
          apps-equal?
@@ -55,6 +56,12 @@
    (let ([c1 (deepcopy c)])
      (apply (vector-ref (app:proc c1) 0)
             (pair (app:proc c1) (pair (app:cont c1) (app:args c1))))))
+
+ ;; call the cont in app
+ (define (call-app-cont c val)
+   (let ([cont1 (deepcopy (app:cont c))]
+         [val1 (deepcopy val)])
+     ((vector-ref cont1 0) cont1 val1)))
 
  ;; cont is a continuation closure vector
  (define (call-app-with-cont c cont)
