@@ -1,9 +1,20 @@
 #!r6rs
 
-;; Sketch (untested!)
-
 ;; Given return-thunk, build polygraph (which corresponds to a system
 ;; of polynomial equations).
+
+(import (rnrs)
+        (cosh)
+        (cosh header)
+        (cosh preamble)
+        (cosh continuation)
+        (cosh application)
+        (cosh visualize)
+        (scheme-tools)
+        (scheme-tools object-id)
+        (scheme-tools hash)
+        (scheme-tools graph)
+        (scheme-tools srfi-compat :1))
 
 
 ;; --------------------------------------------------------------------
@@ -13,15 +24,29 @@
 ;; probabilities of terminals based on what root node they are
 ;; associated with. A score-ref references such a marginal
 ;; probability.
-(define (make-score-ref root-node value)
-  (list 'ref (object-id root-node) value))
+(define (make-score-ref root-node terminal-node)
+  (list 'score-ref root-node terminal-node))
+
+(define (score-ref? obj)
+  (tagged-list? obj 'score-ref))
+
+(define score-ref->root second)
+
+(define score-ref->terminal-node third)
 
 (define (make-root-node id)
   (make-continuation id '(init) '(1.0)))
 
-(define top-cont-closure
+(define identity-cont-closure
   (vector (lambda (self top-value) top-value)
-   'top))
+          'top))
+
+(define (once proc)
+  (let ([called #f])
+    (lambda args
+      (when (not called)
+            (set! called #t)
+            (apply proc args)))))
 
 
 ;; --------------------------------------------------------------------
@@ -86,7 +111,9 @@
              '())))
 
 (define (graph:register-callback! node callback)
-  (hash-table-set! (callback-registry) node (pair callback (graph:callbacks node))))
+  (hash-table-set! (callback-registry)
+                   node
+                   (pair callback (graph:callbacks node))))
 
 (define (graph:callbacks node)
   (hash-table-ref/default (callback-registry) node '()))
@@ -149,14 +176,15 @@
     (graph:add-node! graph root-node)
     (parameterize
      ([callback-registry (make-finitize-hash-table)])    
-     (build-graph graph thunk root-node root-link-promise))))
+     (build-graph graph thunk root-node root-link-promise))
+    graph))
 
 ;; Create/retrieve graph node for new (thunk) result, connect to last
 ;; node in graph. Dispatch according to type of node.
 (define (build-graph graph thunk last-node link-promise)
   (define (get-handler node)
     (cond [(continuation? node) build-graph:continuation]
-          [(app? node) build-graph:application]
+          [(application? node) build-graph:application]
           [else build-graph:value]))
   (let* ([node (thunk)]
          [handler (get-handler node)]
@@ -176,9 +204,9 @@
          (build-graph graph
                       (lambda () (call-continuation node value))
                       node
-                      (make-link-promise value score)))
-       (cont:support node)
-       (cont:scores node)))
+                      (make-link-promise score value)))
+       (continuation:support node)
+       (continuation:scores node)))
 
 ;; Make thunk for delimited application, root node for application
 ;; subgraph, callback to continue with outer continuation when
@@ -187,17 +215,94 @@
 ;; If the delimited application root node is new, build graph from
 ;; there. If not, just call callback on all existing terminal values.
 (define (build-graph:application graph node last-node)
-  (let* ([subthunk (lambda () (call-app-with-cont node top-cont-closure))]
-         [subroot-node (make-root-node (sym+num 'app (app:delimited-id node)))]
+  (let* ([subthunk (lambda () (call-application-with-cont node identity-cont-closure))]
+         [subroot-node (make-root-node (sym+num 'app (application:delimited-id node)))]
          [subroot-link-promise (make-link-promise 1.0 #t)]
          [subroot-is-new (graph:add/retrieve! graph subroot-node)]
-         [marginal-score-ref (make-score-ref subroot-node value)]
-         [callback (lambda (value)
-                     (build-graph graph
-                                  (lambda () (call-app-cont node value))
-                                  node
-                                  (make-link-promise value marginal-score-ref)))])
+         [callback  (once
+                     (lambda (value)
+                       (build-graph graph
+                                    (lambda () (call-application-cont node value))
+                                    node
+                                    (make-link-promise (make-score-ref subroot-node value)
+                                                       value))))])
     (graph:register-callback! subroot-node callback)
     (if subroot-is-new
         (build-graph graph subthunk subroot-node subroot-link-promise)
         (map callback (graph:reachable-terminals graph subroot-node)))))
+
+
+;; --------------------------------------------------------------------
+;; Equation generator
+
+;; find all root nodes (nodes without parents)
+;; for each such node, build equations by following paths
+;; names will be object-ids of (pair root-node node)
+;; therefore, score-refs can be transformed directly into corresponding names
+
+(define (union lsts)
+  (delete-duplicates (apply lset-union (cons finitize-equal? lsts))))
+  
+(define (graph:root-nodes graph)
+  (filter (lambda (node) (null? (graph:parents graph node)))
+          (map first (graph->alist graph))))
+
+;; graph -> (values leaves eqns)
+(define (polygraph->eqns graph)
+  (let* ([roots (graph:root-nodes graph)]
+         [leaves (graph:reachable-terminals graph (graph:root graph))]
+         [eqn-lists (map (lambda (root) (root->eqns graph root)) roots)])
+    (values leaves (union eqn-lists))))
+
+;; graph, subroot, node -> eqns
+(define (root->eqns graph root)
+  (parameterize
+   ([traversal-memory (make-finitize-hash-table)])
+   (let node->eqns ([node root])
+     (pair
+      (node->eqn graph root node)
+      (apply append
+             (map (lambda (child) (if (seen? child) '() (node->eqns child)))
+                  (graph:children graph node)))))))
+
+(define (node->variable-name root node)
+  (sym+num 'n (object->id (pair root node))))
+
+(define (variable-name->node name)
+   (rest (id->object (sym+num->num name))))
+
+(define (link->variable/weight link)
+  (let ([weight (link->weight link)])
+    (cond [(number? weight) weight]
+          [(score-ref? weight)
+           (node->variable-name (score-ref->root weight)
+                                (score-ref->terminal-node weight))]
+          [else (error weight "unknown link weight type")])))
+
+(define (node->eqn graph root node)
+  (let ([parent-links (graph:parent-links graph node)])  
+    `(= ,(node->variable-name root node)
+        ,(if (null? parent-links)
+             1.0
+             `(+ ,@(map (lambda (link)
+                          `(* ,(link->variable/weight link)
+                              ,(node->variable-name root (link->target link))))
+                        parent-links))))))
+
+
+;; --------------------------------------------------------------------
+;; Test
+
+(define expr
+  '(
+    (define (foo)
+      (if (flip .3)
+          (not (foo))
+          (flip)))
+    (foo)
+    ))
+
+(define thunk (expr->return-thunk header (with-preamble expr)))
+
+(let-values ([(leaves eqns) (polygraph->eqns (build-graph:top thunk))])
+  (map pretty-print eqns))

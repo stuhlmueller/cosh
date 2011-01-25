@@ -31,7 +31,7 @@
 
  (define (marginalize-graph graph)
   (pe "marginalization using solver ...\n")
-  (let-values ([(leaves eqn) (graph->eqn graph)])
+  (let-values ([(leaves eqn) (graph->eqns graph)])
     (let ([marginal-values (solve-eqns eqn)])
       (pe "looking up leaf values ...\n")
       (let ([nodename->prior (alist->hash-table marginal-values finitize-equal? finitize-hash)])
@@ -39,7 +39,7 @@
                                   (hash-table-ref/default nodename->prior leaf-name 'unknown)))
              leaves)))))
 
- (define (graph->eqn graph)
+ (define (graph->eqns graph)
    (define leaves '())
    (values
     leaves
