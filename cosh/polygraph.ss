@@ -14,6 +14,7 @@
         (scheme-tools object-id)
         (scheme-tools hash)
         (scheme-tools graph)
+        (scheme-tools polysolve)
         (scheme-tools srfi-compat :1))
 
 
@@ -305,4 +306,4 @@
 (define thunk (expr->return-thunk header (with-preamble expr)))
 
 (let-values ([(leaves eqns) (polygraph->eqns (build-graph:top thunk))])
-  (map pretty-print eqns))
+  (polysolve eqns))
