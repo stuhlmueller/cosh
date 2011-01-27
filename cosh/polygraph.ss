@@ -13,9 +13,12 @@
         (scheme-tools)
         (scheme-tools object-id)
         (scheme-tools hash)
+        (scheme-tools mem)
         (scheme-tools graph)
         (scheme-tools polysolve)
-        (scheme-tools srfi-compat :1))
+        (scheme-tools linsolve)
+        (scheme-tools srfi-compat :1)
+        (scheme-tools srfi-compat :13))
 
 
 ;; --------------------------------------------------------------------
@@ -41,13 +44,6 @@
 (define identity-cont-closure
   (vector (lambda (self top-value) top-value)
           'top))
-
-(define (once proc)
-  (let ([called #f])
-    (lambda args
-      (when (not called)
-            (set! called #t)
-            (apply proc args)))))
 
 
 ;; --------------------------------------------------------------------
@@ -87,11 +83,11 @@
                (map (lambda (obj) (traverse obj next combine stop? default))
                     (next start)))))
 
-(define (seen? node)
-  (hash-table-ref (traversal-memory)
+(define/curry (seen? ht node)
+  (hash-table-ref ht
                   node
                   (lambda () (begin
-                          (hash-table-set! (traversal-memory) node #t)
+                          (hash-table-set! ht node #t)
                           #f))))
 
 (define (terminal-value? graph node)
@@ -107,8 +103,19 @@
              (lambda (node list-of-terminals)
                (if (terminal-value? graph node)
                    (cons node list-of-terminals)
-                   list-of-terminals))
-             seen?
+                   (apply append list-of-terminals)))
+             (seen? (traversal-memory))
+             '())))
+
+(define (graph:reachable? graph from to)
+  (parameterize
+   ([traversal-memory (make-finitize-hash-table)])  
+   (traverse from
+             (lambda (node) (graph:children graph node))
+             (lambda (node any-reachable?)
+               (or (any (lambda (x) x) any-reachable?)
+                   (equal? node to)))
+             (seen? (traversal-memory))
              '())))
 
 (define (graph:register-callback! node callback)
@@ -126,7 +133,7 @@
              (lambda (node) (graph:parents graph node))
              (lambda (node list-of-callback-lists)
                (append (graph:callbacks node) (apply append list-of-callback-lists)))
-             seen?
+             (seen? (traversal-memory))
              '())))
 
 (define (graph:notify-ancestors-of-connection! graph node last-node)
@@ -173,8 +180,9 @@
 (define (build-graph:top thunk)
   (let ([graph (make-graph)]
         [root-node (make-root-node 'root)]
-        [root-link-promise (make-link-promise 1.0 #t)])
+        [root-link-promise (make-link-promise 1.0 #t)])    
     (graph:add-node! graph root-node)
+    (graph:set-root! graph root-node)
     (parameterize
      ([callback-registry (make-finitize-hash-table)])    
      (build-graph graph thunk root-node root-link-promise))
@@ -220,13 +228,13 @@
          [subroot-node (make-root-node (sym+num 'app (application:delimited-id node)))]
          [subroot-link-promise (make-link-promise 1.0 #t)]
          [subroot-is-new (graph:add/retrieve! graph subroot-node)]
-         [callback  (once
-                     (lambda (value)
-                       (build-graph graph
-                                    (lambda () (call-application-cont node value))
-                                    node
-                                    (make-link-promise (make-score-ref subroot-node value)
-                                                       value))))])
+         [callback (mem
+                    (lambda (value)
+                      (build-graph graph
+                                   (lambda () (call-application-cont node value))
+                                   node
+                                   (make-link-promise (make-score-ref subroot-node value)
+                                                      value))))])
     (graph:register-callback! subroot-node callback)
     (if subroot-is-new
         (build-graph graph subthunk subroot-node subroot-link-promise)
@@ -250,27 +258,39 @@
 
 ;; graph -> (values leaves eqns)
 (define (polygraph->eqns graph)
-  (let* ([roots (graph:root-nodes graph)]
-         [leaves (graph:reachable-terminals graph (graph:root graph))]
-         [eqn-lists (map (lambda (root) (root->eqns graph root)) roots)])
-    (values leaves (union eqn-lists))))
+  (let* ([eqn-lists (map (lambda (root) (root->eqns graph root))
+                         (graph:root-nodes graph))]
+         [eqns (union eqn-lists)])    
+    (values (graph:reachable-terminals graph (graph:root graph))
+            eqns)))
+
+(define eqn-memory (make-parameter #f))
 
 ;; graph, subroot, node -> eqns
 (define (root->eqns graph root)
   (parameterize
-   ([traversal-memory (make-finitize-hash-table)])
-   (let node->eqns ([node root])
-     (pair
-      (node->eqn graph root node)
-      (apply append
-             (map (lambda (child) (if (seen? child) '() (node->eqns child)))
-                  (graph:children graph node)))))))
+   ([eqn-memory (make-finitize-hash-table)])
+   (let* ([leaves (graph:reachable-terminals graph root)]
+          [constraint-eqn `(= (+ ,@(map (lambda (leaf) (node->variable-name root leaf)) leaves)) 1.0)])
+     (pair constraint-eqn ;; optional
+           (let node->eqns ([node root])
+             (pair
+              (node->eqn graph root node)
+              (apply append
+                     (map (lambda (child) (if (seen? (eqn-memory) child) '() (node->eqns child)))
+                          (graph:children graph node)))))))))
+
+(define (node:id node)
+  (cond [(continuation? node) (continuation:id node)]
+        [(application? node) (application:id node)]
+        [else (object->id node)]))
 
 (define (node->variable-name root node)
-  (sym+num 'n (object->id (pair root node))))
+  (sym-append 'g (node:id root) 'n (node:id node)))
 
 (define (variable-name->node name)
-   (rest (id->object (sym+num->num name))))
+  (let ([s (symbol->string name)])
+    (id->object (string->number (string-drop s (+ (string-index s #\n) 1))))))
 
 (define (link->variable/weight link)
   (let ([weight (link->weight link)])
@@ -280,30 +300,44 @@
                                 (score-ref->terminal-node weight))]
           [else (error weight "unknown link weight type")])))
 
+;; currently takes parents from all graphs, should only take those
+;; reachable from current initial node
 (define (node->eqn graph root node)
-  (let ([parent-links (graph:parent-links graph node)])  
+  (let ([parent-links (graph:parent-links graph node)])
     `(= ,(node->variable-name root node)
         ,(if (null? parent-links)
              1.0
              `(+ ,@(map (lambda (link)
                           `(* ,(link->variable/weight link)
                               ,(node->variable-name root (link->target link))))
-                        parent-links))))))
+                        (filter (lambda (link) (graph:reachable? graph root (link->target link)))
+                                parent-links)))))))
 
 
 ;; --------------------------------------------------------------------
 ;; Test
 
+;; (define expr
+;;   '(
+;;     (define (foo)
+;;       (if (flip .3)
+;;           (not (foo))
+;;           (flip)))
+;;     (foo)
+;;     ))
+
 (define expr
   '(
-    (define (foo)
-      (if (flip .3)
-          (not (foo))
-          (flip)))
-    (foo)
+    (flip)
     ))
 
-(define thunk (expr->return-thunk header (with-preamble expr)))
+(define thunk (expr->return-thunk header
+                                  (with-preamble expr)))
 
-(let-values ([(leaves eqns) (polygraph->eqns (build-graph:top thunk))])
-  (polysolve eqns))
+(let ([graph (build-graph:top thunk)])
+  (let-values ([(leaves eqns) (polygraph->eqns graph)])
+    (let ([solutions (polysolve eqns)])
+      (map pretty-print eqns)
+      (display-graph graph (lambda (node) (pair (node:id node) node)))
+      (map pretty-print solutions))))
+
