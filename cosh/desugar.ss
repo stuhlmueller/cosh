@@ -94,9 +94,9 @@
        `(begin ,@exprs)))
 
  ;; (begin ...) is now a special form!
-                                        ;(define (desugar-begin expr)
-                                        ;  (last expr))
-                                        ;(register-sugar begin? desugar-begin)
+ ;;(define (desugar-begin expr)
+ ;;  (last expr))
+ ;;(register-sugar begin? desugar-begin)
 
  ;; (let (var-bindings) expr1 ... exprN)
  (define (let? expr) (and (tagged-list? expr 'let) (list? (second expr))))
@@ -198,7 +198,7 @@
    (let* ((defines (map desugar-define-fn (filter (lambda (e) (tagged-list? e 'define)) (rest e))))
           (non-defines (filter (lambda (e) (not (tagged-list? e 'define))) (rest e))))
      (values defines non-defines)))
-   
+ 
  ;;we desugar (begin .. define ..) into letrec for this implementation.
  (define (begin-defines? sexpr)
    (and (tagged-list? sexpr 'begin) (not (null? (filter (lambda (e) (tagged-list? e 'define)) sexpr)))))
@@ -270,44 +270,51 @@
  (define (desugar-fragment-lambda sexpr)
    `(DPmem 1.0 (lambda ,(lambda-parameters sexpr) (if (flip) ,(lambda-body sexpr) (list 'delayed (lambda () ,(lambda-body sexpr)))))))
 
-(define (keyword? expr) (or (tagged-list? expr 'or)
-                            (tagged-list? expr 'and)
-                            (tagged-list? expr 'apply)))
-(define (desugar-keyword expr)
-  (cond ((eq? (car expr) 'or)
-         (if (= (length expr) 3)
-             `(cosh-or ,@(cdr expr))
-             `(cosh-or* (list ,@(cdr expr)))))
-        ((eq? (car expr) 'and)
-         (if (= (length expr) 3)
-             `(cosh-and ,@(cdr expr))
-             `(cosh-and* (list ,@(cdr expr)))))
-        ((eq? (car expr) 'apply)
-         `(cosh-apply ,@(cdr expr)))
-        ))
+ (define (keyword? expr) (or (tagged-list? expr 'or)
+                             (tagged-list? expr 'and)
+                             (tagged-list? expr 'apply)))
+  (define (desugar-or sexpr)
+   (if (= (length sexpr) 2)
+       (second sexpr)
+       `(if ,(second sexpr)
+            #t
+            ,(desugar-or `(or ,@(cddr sexpr))))))
+
+  (define (desugar-and sexpr)
+   (if (= (length sexpr) 2)
+       (second sexpr)
+       `(if ,(second sexpr)
+            ,(desugar-and `(and ,@(cddr sexpr)))
+            #f)))
+ 
+ (define (desugar-keyword expr)
+   (cond ((eq? (car expr) 'or) (desugar-or expr))
+         ((eq? (car expr) 'and) (desugar-and expr))
+         ((eq? (car expr) 'apply)
+          `(cosh-apply ,@(cdr expr)))))
 
 
 
  (register-sugar! fragment-lambda? desugar-fragment-lambda)
  (register-sugar! lazify? desugar-lazify)
- ;(register-sugar! fragmentize? desugar-fragmentize)
+ ;;(register-sugar! fragmentize? desugar-fragmentize)
 
 
-                                        ; @form (let ((var val) ...) expr ...)
-                                        ; @desc
-                                        ; Let binds variables in the scope of the body of the let.
-                                        ; @param assignments An expression '((var val) ...)
-                                        ; @param exprs Body expressions that are evaluated within the environment where variables are assigned.
-                                        ; @return the result of evaluating the last body expr
+ ;; @form (let ((var val) ...) expr ...)
+ ;; @desc
+ ;; Let binds variables in the scope of the body of the let.
+ ;; @param assignments An expression '((var val) ...)
+ ;; @param exprs Body expressions that are evaluated within the environment where variables are assigned.
+ ;; @return the result of evaluating the last body expr
  (register-sugar! let? let->lambda)
 
-                                        ; @form (let* ((var val) ...) expr ...)
-                                        ; @desc
-                                        ; Let* binds variables in the scope of the body of the let.
-                                        ; Each assignment has access to the variables bound earlier on in the same let*.
-                                        ; @param assignments An expression '((var val) ...)
-                                        ; @param exprs Body expressions that are evaluated within the environment where variables are assigned.
-                                        ; @return the result of evaluating the last body expr
+ ;; @form (let* ((var val) ...) expr ...)
+ ;; @desc
+ ;; Let* binds variables in the scope of the body of the let.
+ ;; Each assignment has access to the variables bound earlier on in the same let*.
+ ;; @param assignments An expression '((var val) ...)
+ ;; @param exprs Body expressions that are evaluated within the environment where variables are assigned.
+ ;; @return the result of evaluating the last body expr
  (register-sugar! let*? desugar-let*)
 
  (register-sugar! named-let? named-let->letrec)
@@ -317,15 +324,15 @@
  (register-sugar! define-fn? desugar-define-fn)
  (register-sugar! seq-with-load? expand-loads)
  (register-sugar! when? desugar-when)
-(register-sugar! keyword? desugar-keyword)
+ (register-sugar! keyword? desugar-keyword)
 
-  ;;syntacic sugar query forms:
+ ;;syntacic sugar query forms:
  (register-query-sugar 'mh-query)
  (register-query-sugar 'rejection-query)
  (register-query-sugar 'exact-query)
  (register-query-sugar 'enumeration-query)
- ;(register-query-sugar 'primitive-laplace-mh-query 'laplace-mh-query)
- ;(register-query-sugar 'primitive-gradient-query 'gradient-query)
+ ;;(register-query-sugar 'primitive-laplace-mh-query 'laplace-mh-query)
+ ;;(register-query-sugar 'primitive-gradient-query 'gradient-query)
 
  (register-sugar! psmc-query? desugar-psmc-query 1)
  (register-sugar! mh-query/annealed-init? desugar-mh-query/annealed-init 1)
