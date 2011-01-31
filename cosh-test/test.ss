@@ -10,8 +10,8 @@
 
 (define (test expr)
   (map pretty-print
-       (marginalize-expr header
-                         (with-preamble expr))))
+       (marg-expr header
+                  (with-preamble expr))))
 
 (define (show expr interactive)
   (visualize-graph

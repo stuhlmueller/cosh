@@ -4,9 +4,9 @@
 
 (library
 
- (cosh marginalize)
+ (cosh marg)
 
- (export marginalize-graph)
+ (export marg-graph)
 
  (import (rnrs)
          (rnrs mutable-pairs)
@@ -29,7 +29,7 @@
  (define (variable-name->node name)
    (id->object (sym+num->num name)))
 
- (define (marginalize-graph graph)
+ (define (marg-graph graph)
   (pe "marginalization using linear solver ...\n")
   (let-values ([(leaves eqn) (graph->eqns graph)])
     (let ([marginal-values (linsolve eqn)])

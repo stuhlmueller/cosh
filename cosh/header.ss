@@ -24,9 +24,9 @@
 
      ;; Marginalizes cc-cps-proc with given args, stores resulting
      ;; distribution in cache table, and returns the distribution.
-     (define (marginalize&cache-dist cache cc-cps-proc args)
+     (define (marg&cache-dist cache cc-cps-proc args)
        (let* ([top-k (vector (lambda (self val) val) 'top-k)]
-              [dist (marginalize-cc-cps-thunk (lambda () (apply (vector-ref cc-cps-proc 0) cc-cps-proc top-k args)))])
+              [dist (marg-cc-cps-thunk (lambda () (apply (vector-ref cc-cps-proc 0) cc-cps-proc top-k args)))])
          (pe "dist from my marginal with args  " args ":  " dist "\n")
          (hash-table-set! cache args dist)
          dist))
@@ -45,7 +45,7 @@
             ((vector-ref k 0) k
              (vector
               (lambda (self k1 . args)
-                (let* ([dist-cacher (lambda () (marginalize&cache-dist dist-cache cc-cps-proc args))]
+                (let* ([dist-cacher (lambda () (marg&cache-dist dist-cache cc-cps-proc args))]
                        [dist (hash-table-ref dist-cache args dist-cacher)]
                        (norm (sum (map rest dist)))
                        (dist (map (lambda (x) (cons (car x) (/ (cdr x) norm))) dist))
