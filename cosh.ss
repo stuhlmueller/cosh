@@ -4,9 +4,12 @@
 
  (cosh)
 
- (export marginalize-expr
-         marginalize-cc-cps-thunk
-         marginalize-graph
+ (export marg-expr
+         marg-cc-cps-thunk
+         marg-graph
+         polymarg-expr
+         polymarg-return-thunk
+         polymarg-graph
          expr->graph
          expr->cc-cps-thunk
          expr->return-thunk         
@@ -17,8 +20,10 @@
  (import (rnrs)
          (rnrs eval)
          (transforms)
-         (cosh marginalize)
+         (cosh marg)         
          (cosh graph)
+         (cosh polymarg)
+         (cosh polygraph)
          (cosh desugar)
          (scheme-tools)
          (scheme-tools srfi-compat :1))
@@ -64,13 +69,21 @@
       expr->cc-cps-thunk))
 
  ;; thunk -> dist
- (define marginalize-cc-cps-thunk
-   ($ marginalize-graph
-      cc-cps-thunk->graph)) 
+ (define marg-cc-cps-thunk
+   ($ marg-graph
+      cc-cps-thunk->graph))
 
  ;; (header, expr) -> dist
- (define marginalize-expr
-   ($ marginalize-cc-cps-thunk
+ (define marg-expr
+   ($ marg-cc-cps-thunk
       expr->cc-cps-thunk))
+
+ (define polymarg-return-thunk
+   ($ polymarg-graph
+      return-thunk->polygraph))
+
+ (define polymarg-expr
+   ($ polymarg-return-thunk
+      expr->return-thunk))
 
  )

@@ -10,9 +10,17 @@ Cosh is a Church implementation that uses dynamic programming based on continuat
 
 2. Install [scheme-tools](https://github.com/stuhlmueller/scheme-tools):
 
-    1. Install the [GNU linear programming kit](http://www.gnu.org/software/glpk/), e.g. using <code>sudo apt-get install glpk</code> (Ubuntu/Debian) or <code>sudo port install glpk</code> (MacPorts).
+    1. To use the linear solver:
+
+        1. Install the [GNU linear programming kit](http://www.gnu.org/software/glpk/), e.g. using <code>sudo apt-get install glpk</code> (Ubuntu/Debian) or <code>sudo port install glpk</code> (MacPorts).
   
-    2. Download and install [PyMathProg](http://sourceforge.net/projects/pymprog/), e.g. by downloading the code from sourceforge and then executing <code>sudo python setup.py install</code> in the extracted directory.
+        2. Download and install [PyMathProg](http://sourceforge.net/projects/pymprog/), e.g. by downloading the code from sourceforge and then executing <code>sudo python setup.py install</code> in the extracted directory.
+
+    2. To use the polynomial solver:
+
+        1. Install [Mathematica](http://www.wolfram.com/mathematica/).
+
+        2. Download and install [pexpect](http://sourceforge.net/projects/pexpect/files/) e.g. via sourceforge and <code>sudo python setup.py install</code>.
   
     3. Clone the scheme-tools repository using <code>git clone git://github.com/stuhlmueller/scheme-tools.git</code>.
   
