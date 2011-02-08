@@ -70,4 +70,4 @@ Cosh is an experimental Church implementation that uses dynamic programming base
 
 * _components_
 
-    Clustering together the strongly connected components of a polymap results in the acyclic components graph. Each component corresponds to a (linear or polynomial) problem that can be solved independently given the referenced parent parameters. By solving the components in topological order, the marginal distribution of the overall inference problem can be computed.
+    Clustering the strongly connected components of a polymap results in the acyclic components graph. Each component corresponds to a (linear or polynomial) problem that can be solved independently given the referenced parent parameters. By solving the components in topological order, the marginal distribution of the overall inference problem can be computed.
