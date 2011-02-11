@@ -317,6 +317,8 @@
  ;; @return the result of evaluating the last body expr
  (register-sugar! let*? desugar-let*)
 
+ (register-sugar! lambda? (lambda (expr) `(lambda ,(lambda-parameters expr) ,(begin-wrap (cddr expr)))) 1)
+
  (register-sugar! named-let? named-let->letrec)
  (register-sugar! case? desugar-case)
  (register-sugar! cond? desugar-cond)
