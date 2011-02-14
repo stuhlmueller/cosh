@@ -10,6 +10,7 @@
          polymarg-expr
          polymarg-return-thunk
          polymarg-graph
+         compmarg-expr
          expr->graph
          expr->cc-cps-thunk
          expr->return-thunk         
@@ -23,9 +24,14 @@
          (cosh marg)         
          (cosh graph)
          (cosh polymarg)
+         (cosh polycommon)
          (cosh polygraph)
+         (cosh polymap)
+         (cosh components)
          (cosh desugar)
          (scheme-tools)
+         (scheme-tools graph)
+         (scheme-tools graph components)
          (scheme-tools srfi-compat :1))
 
  (define (header->reserved-words header)
@@ -48,26 +54,25 @@
    (eval (local (begin-wrap (expr->body expr)))
          (expr->environment expr)))
 
+
+ ;; linear solver
+
  (define (expr->cc-cps-expr header expr with-returns)
    `(,@header
      (lambda ()
        ,(transform (de-sugar-toplevel expr)
                    (header->reserved-words header)
                    with-returns))))
-
+ 
  ;; (header, expr) -> thunk
  (define (expr->cc-cps-thunk header expr)
    (evaluate (expr->cc-cps-expr header expr #f)))
-
- ;; (header, expr) -> thunk 
- (define (expr->return-thunk header expr)
-   (evaluate (expr->cc-cps-expr header expr #t)))
 
  ;; (header, expr) -> graph
  (define expr->graph
    ($ cc-cps-thunk->graph
       expr->cc-cps-thunk))
-
+ 
  ;; thunk -> dist
  (define marg-cc-cps-thunk
    ($ marg-graph
@@ -78,12 +83,31 @@
    ($ marg-cc-cps-thunk
       expr->cc-cps-thunk))
 
+ 
+ ;; polynomial solver
+
+ ;; (header, expr) -> thunk 
+ (define (expr->return-thunk header expr)
+   (evaluate (expr->cc-cps-expr header expr #t)))
+ 
+ ;; thunk -> dist
  (define polymarg-return-thunk
    ($ polymarg-graph
       return-thunk->polygraph))
 
+ ;; expr -> dist
  (define polymarg-expr
    ($ polymarg-return-thunk
       expr->return-thunk))
 
+ 
+ ;; component solver
+
+ ;; expr -> dist
+ (define (compmarg-expr header expr)
+   (let* ([graph (return-thunk->polygraph (expr->return-thunk header expr))]
+          [polymap (polygraph->polymap graph)])
+     (let ([components (strongly-connected-components polymap)])
+       (marginalize-components graph components))))
+ 
  )
