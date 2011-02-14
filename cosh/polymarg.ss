@@ -7,7 +7,9 @@
  
  (cosh polymarg)
 
- (export polymarg-graph)
+ (export polymarg-graph
+         subgraph->equations
+         lookup-leaf-values)
 
  (import (rnrs)
          (cosh polycommon)
@@ -20,28 +22,22 @@
          (scheme-tools srfi-compat :1)
          (scheme-tools srfi-compat :13)
          (scheme-tools hash)) 
- 
- (define (graph:root-nodes graph)
-   (filter (lambda (node) (null? (graph:parents graph node)))
-           (map first (graph->alist graph))))
 
- (define (polygraph->eqns graph)
+ (define (polygraph->equations graph)
    (union
-    (map (lambda (root) (root->eqns graph root))
+    (map (lambda (root) (subgraph->equations graph root))
          (graph:root-nodes graph))
     finitize-equal?))
  
- (define (root->eqns graph root)
+ (define (subgraph->equations graph root)
    (let ([seen? (make-watcher)])
-     (let* ([leaves (graph:reachable-terminals graph root)]
-            [constraint-eqn `(= (+ ,@(map (lambda (leaf) (node->variable-name root leaf)) leaves)) 1.0)])
-       (pair constraint-eqn
-             (let node->eqns ([node root])
-               (pair
-                (node->eqn graph root node)
-                (apply append
-                       (map (lambda (child) (if (seen? child) '() (node->eqns child)))
-                            (graph:children graph node)))))))))
+     (let* ([leaves (graph:reachable-terminals graph root)])
+       (let node->equations ([node root])
+         (pair
+          (node->eqn graph root node)
+          (apply append
+                 (map (lambda (child) (if (seen? child) '() (node->equations child)))
+                      (graph:children graph node))))))))
 
  (define (node->variable-name root node)
    (sym-append 'g (node:id root) 'n (node:id node)))
@@ -69,15 +65,16 @@
                          (filter (lambda (link) (graph:reachable? graph root (link->target link)))
                                  parent-links)))))))
 
+ (define (lookup-leaf-values graph solutions)
+   (let ([leaves (graph:reachable-terminals graph (graph:root graph))])
+     (map (lambda (node)
+            (let ([var-name (node->variable-name (graph:root graph) node)])
+              (pair node (cdr (assoc var-name solutions)))))
+          leaves)))
+
  (define (polymarg-graph graph)
-   (let* ([eqns (polygraph->eqns graph)]
-          [leaves (graph:reachable-terminals graph (graph:root graph))]
-          [solutions (polysolve eqns)])
-     (map (lambda (solution)
-            (map (lambda (node)
-                   (let ([var-name (node->variable-name (graph:root graph) node)])
-                     (pair node (cdr (assoc var-name solution)))))
-                 leaves))
-          solutions)))
+   (let* ([equations (polygraph->equations graph)]          
+          [solutions (polysolve/unique equations)])
+     (lookup-leaf-values graph solutions)))
 
  )
