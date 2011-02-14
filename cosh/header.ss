@@ -54,6 +54,27 @@
               (sym+num 'marginalized-proc proc-id)))))
         'marginalizer))
 
+     ;;take two thunks and compute the KL between them. doesn't cache, so use marginalize first...
+     (define KL
+       (vector
+        (lambda (self k A B)
+          (let* ([top-k (vector (lambda (self val) val) 'top-k)]
+                 [distA (marg-cc-cps-thunk (lambda () (apply (vector-ref A 0) A top-k '())))]
+                 [distB (marg-cc-cps-thunk (lambda () (apply (vector-ref B 0) B top-k '())))]
+                 [kl (sum
+                      (map (lambda (av)
+                             (let* ((aprob (cdr av))
+                                    (bv (assoc (car av) distB))
+                                    (bprob (if bv (cdr bv) 0.0)))
+                               (if (= aprob 0.0)
+                                   0.0
+                                   (if (= bprob 0.0)
+                                       -inf.0
+                                       (* aprob (log (/ bprob aprob)))))))
+                           distA))])
+            ((vector-ref k 0) k kl)))
+        'KL-divergence))
+
      (define flip
        (vector
         (lambda (self k . p)
