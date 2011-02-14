@@ -23,8 +23,8 @@
          [seen? (make-watcher)])
      (build-polymap! graph seen? polymap (graph:root graph) (graph:root graph))))
 
- (define (build-polymap! graph seen? polymap root node)   
-   (when (not (seen? node))
+ (define (build-polymap! graph seen? polymap root node)
+   (when (not (seen? (pair root node)))
          (when (null? (graph:parents graph node))
                (graph:add-node! polymap node))
          (for-each (lambda (link)
