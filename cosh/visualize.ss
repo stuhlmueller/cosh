@@ -11,8 +11,9 @@
          (only (scheme-tools math) sample-discrete)
          (only (scheme-tools srfi-compat :1) filter-map)
          (cosh continuation)
-         (cosh watcher)
          (scheme-tools)
+         (scheme-tools watcher)
+         (scheme-tools graph utils)
          (scheme-tools graph)
          (scheme-tools object-id)
          (scheme-tools ubigraph))
@@ -111,11 +112,14 @@
  
  (define (visualize-graph graph interactive)
    (ubi-reset)
-   (draw-node (node->id (graph:root graph) #f) 'root)
-   (visualize graph
-              (graph:root graph)
-              (get-watcher)
-              interactive))
+   (for-each
+    (lambda (root)
+      (draw-node (node->id root #f) 'root)
+      (visualize graph
+                 root
+                 (make-watcher)
+                 interactive))
+    (graph:root-nodes graph)))
 
  (define (alist-add/replace el lst eql)
    (cons el

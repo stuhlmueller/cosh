@@ -10,7 +10,6 @@
 
  (import (rnrs)
          (rnrs mutable-pairs)
-         (cosh watcher)
          (cosh continuation)
          (scheme-tools)
          (scheme-tools linsolve)
