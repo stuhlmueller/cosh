@@ -21,25 +21,21 @@
            (equal? (foo x (- n 1))
                    z))))
 
-    (foo #t 3)
+    (foo #t 1)
 
     ))
 
 (define (print-solutions solutions)
   (if (null? solutions)
       (pe "No solutions!")
-      (map-enumerate (lambda (i solution)
-                       (pe "\nSolution " (+ i 1) ": \n")
-                       (map pretty-print solution)
-                       (pe "\n"))
-                     solutions)))
+      (map pretty-print solutions)))
 
 (define (main)
   (pe "Compiling expression to procedure ...\n")
   (let ([thunk (expr->return-thunk header
                                    (with-preamble expr))])
     (pe "Building computation graph ...")
-    (let ([graph (return-thunk->polygraph thunk)])
+    (let ([graph (return-thunk->polygraph thunk #f)])
       (pe " size: " (graph-size graph) "\n")
       (pe "Marginalizing graph using polynomial solver ...\n")
       (print-solutions (polymarg-graph graph)))))
@@ -47,6 +43,7 @@
 (define (main2)
   (print-solutions
    (polymarg-expr header
-                  (with-preamble expr))))
+                  (with-preamble expr)
+                  #f)))
 
 (main)

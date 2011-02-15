@@ -90,22 +90,22 @@
  (define (expr->return-thunk header expr)
    (evaluate (expr->cc-cps-expr header expr #t)))
  
- ;; thunk -> dist
+ ;; (thunk, graph-size-limit) -> dist
  (define polymarg-return-thunk
    ($ polymarg-graph
       return-thunk->polygraph))
 
- ;; expr -> dist
- (define polymarg-expr
-   ($ polymarg-return-thunk
-      expr->return-thunk))
+ ;; (expr, graph-size-limit) -> dist
+ (define (polymarg-expr expr graph-size-limit)
+   (polymarg-return-thunk (expr->return-thunk expr)
+                          graph-size-limit))
 
  
  ;; component solver
 
  ;; expr -> dist
- (define (compmarg-expr header expr)
-   (let* ([graph (return-thunk->polygraph (expr->return-thunk header expr))]
+ (define (compmarg-expr header expr graph-size-limit)
+   (let* ([graph (return-thunk->polygraph (expr->return-thunk header expr) graph-size-limit)]
           [polymap (polygraph->polymap graph)])
      (let ([components (strongly-connected-components polymap)])
        (marginalize-components graph components))))
