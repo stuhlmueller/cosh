@@ -12,7 +12,7 @@
          (rnrs mutable-pairs)
          (cosh continuation)
          (scheme-tools)
-         (scheme-tools linsolve)
+         (scheme-tools math linear)
          (scheme-tools graph)
          (scheme-tools queue)
          (scheme-tools mem)

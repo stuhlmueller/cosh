@@ -48,11 +48,11 @@
            (equal? (foo x (- n 1))
                    z))))
 
-    (foo #t 2)
+    (foo #t 1)
 
     ))
 
 (map pretty-print
      (compmarg-expr header
                     (with-preamble forcingfromabove-expr)
-                    100))
+                    1000))

@@ -18,7 +18,7 @@
          (scheme-tools watcher)
          (scheme-tools graph)
          (scheme-tools graph utils)
-         (scheme-tools polysolve)
+         (scheme-tools math polynomial)
          (scheme-tools srfi-compat :1)
          (scheme-tools srfi-compat :13)
          (scheme-tools hash)) 
