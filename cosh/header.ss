@@ -40,7 +40,7 @@
      (define marginalize
        (vector
         (lambda (self k cc-cps-proc)
-          (let ([dist-cache (make-equal-hash-table)]
+          (let ([dist-cache (make-finitize-hash-table)]
                 [proc-id (object->id cc-cps-proc)])
             ((vector-ref k 0) k
              (vector
