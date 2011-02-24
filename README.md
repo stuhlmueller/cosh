@@ -2,31 +2,21 @@
 
 Cosh is an experimental Church implementation that uses dynamic programming based on continuation hashing.
 
-## Installation instructions
+## Installation
 
 0. Install [git](http://git-scm.com/).
 
-1. Follow the [instructions on the Church wiki](http://projects.csail.mit.edu/church/wiki/Installation) to install the development version of [Ikarus](http://ikarus-scheme.org/) or [Vicare](https://github.com/marcomaggi/vicare) with foreign function interface enabled.
+1. Follow the [instructions on the Church wiki](http://projects.csail.mit.edu/church/wiki/Installation) to install the development version of [Ikarus Scheme](http://ikarus-scheme.org/) or [Vicare Scheme](https://github.com/marcomaggi/vicare) with foreign function interface enabled.
 
 2. Install [scheme-tools](https://github.com/stuhlmueller/scheme-tools):
-
-    1. To use the linear solver:
-
-        1. Install the [GNU linear programming kit](http://www.gnu.org/software/glpk/), e.g. using <code>sudo apt-get install glpk</code> (Ubuntu/Debian) or <code>sudo port install glpk</code> (MacPorts).
   
-        2. Download and install [PyMathProg](http://sourceforge.net/projects/pymprog/), e.g. by downloading the code from sourceforge and then executing <code>sudo python setup.py install</code> in the extracted directory.
-
-    2. To use the polynomial solver:
-
-        1. Install [Mathematica](http://www.wolfram.com/mathematica/).
-
-        2. Download and install [pexpect](http://sourceforge.net/projects/pexpect/files/) e.g. via sourceforge and <code>sudo python setup.py install</code>.
+    1. Clone the scheme-tools repository using <code>git clone git://github.com/stuhlmueller/scheme-tools.git</code>.
   
-    3. Clone the scheme-tools repository using <code>git clone git://github.com/stuhlmueller/scheme-tools.git</code>.
-  
-    4. Add the scheme-tools directory to your <code>$IKARUS_LIBRARY_PATH</code>. In general, you can add a directory to <code>$IKARUS_LIBRARY_PATH</code> by changing into the directory and typing <code>echo -e "\nexport IKARUS_LIBRARY_PATH=\`pwd\`:\$IKARUS_LIBRARY_PATH" >> ~/.bashrc</code>. Replace <code>~/.bashrc</code> with the location of your shell config file.
+    2. Add the scheme-tools directory to your <code>$IKARUS_LIBRARY_PATH</code>. 
 
-    5. Add the scheme-tools/bin directory to your <code>$PATH</code>, e.g. by changing into the directory and typing <code>echo -e "\nexport PATH=\`pwd\`:\$PATH" >> ~/.bashrc</code>.
+        To add a directory to your <code>$IKARUS_LIBRARY_PATH</code>, change into the directory and type <code>echo -e "\nexport IKARUS_LIBRARY_PATH=\`pwd\`:\$IKARUS_LIBRARY_PATH" >> ~/.bashrc</code>. Replace <code>~/.bashrc</code> with the location of your shell config file.
+
+    3. Add the scheme-tools/bin directory to your <code>$PATH</code>, e.g. by changing into the directory and typing <code>echo -e "\nexport PATH=\`pwd\`:\$PATH" >> ~/.bashrc</code>.
 
 4. Install [scheme-transforms](https://github.com/stuhlmueller/scheme-transforms):
 
