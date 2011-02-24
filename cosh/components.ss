@@ -13,6 +13,7 @@
          (scheme-tools math polynomial)
          (scheme-tools math iterate)
          (scheme-tools hash)
+         (scheme-tools watcher)
          (scheme-tools)
          (cosh polymarg)
          (cosh polycommon))
@@ -37,6 +38,11 @@
    (let* ([symbol-table (equations->symbol-index equations)]
           [relevant? (lambda (binding) (hash-table-ref/default symbol-table (first binding) #f))])
      (filter relevant? bindings)))
+
+ ;; Filter out duplicate bindings.
+ (define (unique-bindings bindings)
+   (let ([seen? (make-watcher)])
+     (filter (lambda (binding) (not (seen? binding))) bindings)))
  
  ;; Takes in an association list of variable names and values,
  ;; generates equations.
@@ -53,24 +59,24 @@
  ;; solutions: association list of variable names (?) and values
  ;; return value: new solutions
  (define (marginalize-component graph component solutions)
-   (pe "marginalizing component ...\n")
+   ;; (pe "marginalizing component ...\n")
    (let* ([equations-1 (component-equations graph component)]
           [equations-2 (bindings->equations
-                        (relevant-bindings equations-1
-                                           solutions))]
+                        (unique-bindings
+                         (relevant-bindings equations-1
+                                            solutions)))]
           [equations (append equations-2 equations-1)])
-     (map pretty-print equations)
-     (let ([solutions ;; (linsolve/iterative equations 10)
-                      (polysolve/unique equations)
-                      ])
-       (pe "solutions: \n")
-       (map pretty-print solutions)
-       (pe "\n")
+     ;; (map pretty-print equations)
+     (let ([solutions (iterate equations 0.0)])
+       ;; (pe "solutions: \n")
+       ;; (map pretty-print solutions)
+       ;; (pe "\n")
        solutions)))
 
  ;; Components must be in topological order (i.e. if there is a link
  ;; from component A to component B, A must come first).
  (define (marginalize-components graph components)
+   (pe (graph-size graph) " nodes, " (length components) " components\n\n")
    (let loop ([components components]
               [solutions '()])
      (if (null? components)
