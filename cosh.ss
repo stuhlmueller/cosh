@@ -21,16 +21,19 @@
  (import (rnrs)
          (rnrs eval)
          (transforms)
+         (cosh dot)
          (cosh marg)         
          (cosh graph)
          (cosh polymarg)
          (cosh polycommon)
          (cosh polygraph)
+         (cosh polygraph simplify)
          (cosh polymap)
          (cosh components)
          (cosh desugar)
          (scheme-tools)
          (scheme-tools graph)
+         (scheme-tools graph utils)
          (scheme-tools graph components)
          (scheme-tools srfi-compat :1))
 
@@ -106,7 +109,9 @@
  ;; expr -> dist
  (define (compmarg-expr header expr graph-size-limit)
    (let* ([graph (return-thunk->polygraph (expr->return-thunk header expr) graph-size-limit)]
+          [graph (simplify-polygraph! graph)]
           [polymap (polygraph->polymap graph)])
+     ;; (display (polygraph->dot graph))
      (let ([components (strongly-connected-components polymap)])
        (marginalize-components graph components))))
  
