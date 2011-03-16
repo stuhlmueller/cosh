@@ -48,7 +48,7 @@
                 (let* ([dist-cacher (lambda () (marg&cache-dist dist-cache cc-cps-proc args))]
                        [dist (hash-table-ref dist-cache args dist-cacher)]
                        (norm (sum (map rest dist)))
-                       (dist (map (lambda (x) (cons (car x) (/ (cdr x) norm))) dist))
+                       (dist (if (= norm 0.0) dist (map (lambda (x) (cons (car x) (/ (cdr x) norm))) dist)))
                        )
                   (make-continuation k1 (map car dist) (map cdr dist))) )
               (sym+num 'marginalized-proc proc-id)))))
@@ -69,8 +69,8 @@
                                (if (= aprob 0.0)
                                    0.0
                                    (if (= bprob 0.0)
-                                       -inf.0
-                                       (* aprob (log (/ bprob aprob)))))))
+                                       +inf.0
+                                       (* aprob (log (/ aprob bprob)))))))
                            distA))])
             ((vector-ref k 0) k kl)))
         'KL-divergence))
