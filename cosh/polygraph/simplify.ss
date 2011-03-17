@@ -41,7 +41,10 @@
    (let ([root-nodes (graph:root-nodes graph)]
          [marginal-table (make-finitize-hash-table)]
          [seen? (make-watcher)])
-     (for-each (lambda (root) (find-marginals graph root root marginal-table seen?))
+     (for-each (lambda (root) (let* ([local-table (make-finitize-hash-table)]
+                                [success (call/cc (lambda (cont) (find-marginals graph root root local-table seen? cont)))])
+                           (when success
+                                 (hash-table-merge! marginal-table local-table))))
                root-nodes)
      marginal-table))
 
@@ -49,8 +52,9 @@
  ;; probability is 1, continue. Otherwise, if target is a terminal
  ;; node, stop and store prob/score-ref for pair of root node and
  ;; terminal node. If target is not a terminal node, give up on this
- ;; subproblem.
- (define (find-marginals graph root node table seen?)
+ ;; subproblem (need to throw out all marginal info, since more
+ ;; complicated paths could lead to simple marginal values).
+ (define (find-marginals graph root node table seen? stop)
    (let ([child-links (graph:child-links graph node)])
      (for-each (lambda (link)
                  (when (not (seen? (pair node link)))
@@ -58,8 +62,9 @@
                            (hash-table-set! table
                                             (pair root (link->target link))
                                             (link->weight link))
-                           (when (equal? (link->weight link) 1.0)
-                                 (find-marginals graph root (link->target link) table seen?)))))
+                           (if (equal? (link->weight link) 1.0)
+                               (find-marginals graph root (link->target link) table seen? stop)
+                               (stop #f)))))
                child-links)))
 
  ;; (proc, table) -> changed
