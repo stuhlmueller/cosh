@@ -29,10 +29,8 @@
    (id->object (sym+num->num name)))
 
  (define (marg-graph graph)
-  (pe "marginalization using linear solver ...\n")
   (let-values ([(leaves eqn) (graph->eqns graph)])
     (let ([marginal-values (linsolve eqn)])
-      (pe "looking up leaf values ...\n")
       (let ([nodename->prior (alist->hash-table marginal-values finitize-equal? finitize-hash)])
         (map (lambda (leaf-name) (pair (variable-name->node leaf-name)
                                   (hash-table-ref/default nodename->prior leaf-name 'unknown)))
