@@ -119,8 +119,7 @@
        (marginalize-components graph components))))
 
 
- ;; "cosh" refers to the most current solver, using the default header
- ;; and preamble
+ ;; most current solver using default header and preamble
 
  (define (cosh expr . limit)
    (compmarg-expr header
