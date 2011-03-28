@@ -26,16 +26,7 @@ TEMPLATE = """#!r6rs
 
 (import (rnrs)
         (scheme-tools)
-        (cosh)
-        (cosh visualize)
-        (cosh preamble)
-        (cosh header)
-        (cosh-test pragmatics))
-
-(define (marg expr)
-  (map pretty-print
-       (marginalize-expr header
-                         (with-preamble expr))))
+        (cosh))
 
 (define expr
   '(
@@ -43,7 +34,7 @@ TEMPLATE = """#!r6rs
 
 ))
 
-(marg expr)
+(map pretty-print (cosh expr))
 """
 
 @optfunc.main
