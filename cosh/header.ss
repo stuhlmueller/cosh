@@ -11,7 +11,6 @@
  (define header
    '((import (rnrs)
              (rnrs mutable-pairs)
-             (cosh-test utils)
              (scheme-tools object-id)
              (only (scheme-tools) pair rest sum pretty-print pe sym+num exact->inexact inexact->exact)
              (only (scheme-tools math) random-real random-integer randomize-rng)
