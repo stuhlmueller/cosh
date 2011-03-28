@@ -59,24 +59,18 @@
  ;; solutions: association list of variable names (?) and values
  ;; return value: new solutions
  (define (marginalize-component graph component solutions)
-   ;; (pe "marginalizing component ...\n")
    (let* ([equations-1 (component-equations graph component)]
           [equations-2 (bindings->equations
                         (unique-bindings
                          (relevant-bindings equations-1
                                             solutions)))]
           [equations (append equations-2 equations-1)])
-     ;; (map pretty-print equations)
-     (let ([solutions (iterate equations 0.0)])
-       ;; (pe "solutions: \n")
-       ;; (map pretty-print solutions)
-       ;; (pe "\n")
-       solutions)))
+     (iterate equations 0.0)))
 
  ;; Components must be in topological order (i.e. if there is a link
  ;; from component A to component B, A must come first).
  (define (marginalize-components graph components)
-   (pe (graph-size graph) " nodes, " (length components) " components\n\n")
+   ;; (pe (graph-size graph) " nodes, " (length components) " components\n\n")
    (let loop ([components components]
               [solutions '()])
      (if (null? components)
