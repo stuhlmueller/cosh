@@ -84,9 +84,8 @@
       cc-cps-thunk->graph))
 
  ;; (header, expr) -> dist
- (define marg-expr
-   ($ marg-cc-cps-thunk
-      expr->cc-cps-thunk))
+ (define (marg-expr header expr graph-size-limit)
+   (marg-cc-cps-thunk (expr->cc-cps-thunk header expr) graph-size-limit))
 
  
  ;; polynomial solver
@@ -101,8 +100,8 @@
       return-thunk->polygraph))
 
  ;; (expr, graph-size-limit) -> dist
- (define (polymarg-expr expr graph-size-limit)
-   (polymarg-return-thunk (expr->return-thunk expr)
+ (define (polymarg-expr header expr graph-size-limit)
+   (polymarg-return-thunk (expr->return-thunk header expr)
                           graph-size-limit))
 
  
