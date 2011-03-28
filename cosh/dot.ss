@@ -4,7 +4,8 @@
 
  (cosh dot)
 
- (export polygraph->dot)
+ (export polygraph->dot
+         polygraph->file)
 
  (import (rnrs)
          (cosh polycommon)
@@ -74,5 +75,12 @@
             ,@(map (lambda (entry) (entry->dot graph entry))
                    (graph->alist graph))
             "\n}\n\n")))
+
+ (define (polygraph->file graph)
+   (pe "Writing graph to /tmp/graph.dot\n")
+   (system "rm /tmp/graph.dot")
+   (with-output-to-file "/tmp/graph.dot"
+     (lambda () (display (polygraph->dot graph))))
+   graph)
 
  )
