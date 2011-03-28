@@ -81,6 +81,7 @@
  ;; thunk -> dist
  (define marg-cc-cps-thunk
    ($ marg-graph
+      simplify-polygraph!
       cc-cps-thunk->graph))
 
  ;; (header, expr) -> dist
