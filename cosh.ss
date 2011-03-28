@@ -113,7 +113,6 @@
    (let* ([graph (return-thunk->polygraph (expr->return-thunk header expr) graph-size-limit)]
           [graph (simplify-polygraph! graph)]
           [polymap (polygraph->polymap graph)])
-     ;; (display (polygraph->dot graph))
      (let ([components (strongly-connected-components polymap)])
        (marginalize-components graph components))))
 
