@@ -60,7 +60,6 @@
    (eval (local (begin-wrap (expr->body expr)))
          (expr->environment expr)))
 
-
  ;; linear solver
 
  (define (expr->cc-cps-expr header expr with-returns)
