@@ -53,16 +53,14 @@
                        nodes values scores)))
      graph))
 
- (define (explode graph)
-   (pe "building graph ...\n")
-   (let ([new-graph 
-          (let ([queue (make-queue (graph:root graph))])
-            (let loop ([graph graph])
-              (if (queue-empty? queue)
-                  graph
-                  (loop (step graph queue)))))])
-     (pe "done. size: " (graph-size graph) "\n")
-     graph))
+ (define (explode graph graph-size-limit)
+   (let ([queue (make-queue (graph:root graph))])
+     (let loop ([graph graph])
+       (if (or (and graph-size-limit
+                    (> (graph-size graph) graph-size-limit))
+               (queue-empty? queue))
+           graph
+           (loop (step graph queue))))))
      
  ;; thunk -> graph
  (define cc-cps-thunk->graph
