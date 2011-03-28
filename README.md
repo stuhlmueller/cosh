@@ -4,11 +4,9 @@ Cosh is an experimental Church implementation that uses dynamic programming base
 
 ## Installation
 
-0. Install [git](http://git-scm.com/).
+This installation assumes that you have [git](http://git-scm.com/) and a R6RS Scheme installed. The [instructions on the Church wiki](http://projects.csail.mit.edu/church/wiki/Installation) describe how to install the development version of [Ikarus Scheme](http://ikarus-scheme.org/) or [Vicare Scheme](https://github.com/marcomaggi/vicare) with foreign function interface enabled.
 
-1. Follow the [instructions on the Church wiki](http://projects.csail.mit.edu/church/wiki/Installation) to install the development version of [Ikarus Scheme](http://ikarus-scheme.org/) or [Vicare Scheme](https://github.com/marcomaggi/vicare) with foreign function interface enabled.
-
-2. Install [scheme-tools](https://github.com/stuhlmueller/scheme-tools):
+1. Install [scheme-tools](https://github.com/stuhlmueller/scheme-tools):
   
     1. Clone the scheme-tools repository using <code>git clone git://github.com/stuhlmueller/scheme-tools.git</code>.
   
@@ -18,19 +16,43 @@ Cosh is an experimental Church implementation that uses dynamic programming base
 
     3. Add the scheme-tools/bin directory to your <code>$PATH</code>, e.g. by changing into the directory and typing <code>echo -e "\nexport PATH=\`pwd\`:\$PATH" >> ~/.bashrc</code>.
 
-4. Install [scheme-transforms](https://github.com/stuhlmueller/scheme-transforms):
+2. Install [scheme-transforms](https://github.com/stuhlmueller/scheme-transforms):
 
     1. Clone the repository using <code>git clone git://github.com/stuhlmueller/scheme-transforms.git</code>.
   
     2. Add the scheme-transforms directory to your <code>$IKARUS_LIBRARY_PATH</code> (see above).
 
-5. Install [cosh](https://github.com/stuhlmueller/cosh):
+3. Install [cosh](https://github.com/stuhlmueller/cosh):
 
     1. Clone the repository using <code>git clone git://github.com/stuhlmueller/cosh.git</code>.
   
     2. Add the cosh directory to your <code>$IKARUS_LIBRARY_PATH</code> (see above).
 
     3. Add the cosh/bin directory to your <code>$PATH</code> (see above).
+
+## Usage
+
+Example:
+
+    #!r6rs
+    
+    (import (rnrs)
+            (cosh)
+            (scheme-tools))
+    
+    (define my-program
+      '(
+    
+        (rejection-query
+         (define x (flip))
+         (define y (flip))
+         (list x y)
+         (or x y))
+    
+        ))
+    
+    (map pretty-print
+         (cosh my-program))
 
 ## Concepts
 
