@@ -4,7 +4,8 @@
 
  (cosh)
 
- (export marg-expr
+ (export cosh
+         marg-expr
          marg-cc-cps-thunk
          marg-graph
          polymarg-expr
@@ -31,6 +32,8 @@
          (cosh polymap)
          (cosh components)
          (cosh desugar)
+         (cosh header)
+         (cosh preamble)
          (scheme-tools)
          (scheme-tools graph)
          (scheme-tools graph utils)
@@ -114,5 +117,16 @@
      ;; (display (polygraph->dot graph))
      (let ([components (strongly-connected-components polymap)])
        (marginalize-components graph components))))
+
+
+ ;; "cosh" refers to the most current solver, using the default header
+ ;; and preamble
+
+ (define (cosh expr . limit)
+   (compmarg-expr header
+                  (with-preamble expr)
+                  (if (null? limit)
+                      #f
+                      (first limit))))
  
  )
