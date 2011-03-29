@@ -1,6 +1,6 @@
 # Cosh
 
-Cosh is an experimental Church implementation that uses dynamic programming based on continuation hashing.
+Cosh is an experimental Church implementation that uses dynamic programming based on hashing factored continuations.
 
 ## Installation
 
