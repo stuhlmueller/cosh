@@ -10,7 +10,6 @@
          (cosh visualize)
          (scheme-tools srfi-compat :1)
          (scheme-tools graph)
-         (scheme-tools math polynomial)
          (scheme-tools math iterate)
          (scheme-tools hash)
          (scheme-tools watcher)
