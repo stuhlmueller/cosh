@@ -1,0 +1,6 @@
+(define (foo)
+  (if (flip)
+      (not (foo))
+      #t))
+
+(foo)

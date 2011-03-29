@@ -1,0 +1,5 @@
+(rejection-query
+ (define x (flip))
+ (define y (flip))
+ (list x y)
+ (or x y))
