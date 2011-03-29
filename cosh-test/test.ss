@@ -11,7 +11,8 @@
 (define (test expr)
   (map pretty-print
        (marg-expr header
-                  (with-preamble expr))))
+                  (with-preamble expr)
+                  #f)))
 
 (define (show expr interactive)
   (visualize-graph

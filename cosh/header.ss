@@ -25,7 +25,7 @@
      ;; distribution in cache table, and returns the distribution.
      (define (marg&cache-dist cache cc-cps-proc args)
        (let* ([top-k (vector (lambda (self val) val) 'top-k)]
-              [dist (marg-cc-cps-thunk (lambda () (apply (vector-ref cc-cps-proc 0) cc-cps-proc top-k args)))])
+              [dist (marg-cc-cps-thunk (lambda () (apply (vector-ref cc-cps-proc 0) cc-cps-proc top-k args)) #f)])
          (pe "dist from my marginal with args  " args ":  " dist "\n")
          (hash-table-set! cache args dist)
          dist))

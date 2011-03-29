@@ -78,11 +78,11 @@
    ($ cc-cps-thunk->graph
       expr->cc-cps-thunk))
  
- ;; thunk -> dist
- (define marg-cc-cps-thunk
-   ($ marg-graph
-      simplify-polygraph!
-      cc-cps-thunk->graph))
+ ;; (thunk, graph-size-limit) -> dist
+ (define (marg-cc-cps-thunk cc-cps-thunk graph-size-limit)
+   (marg-graph
+    (simplify-polygraph!
+     (cc-cps-thunk->graph cc-cps-thunk graph-size-limit))))
 
  ;; (header, expr) -> dist
  (define (marg-expr header expr graph-size-limit)
