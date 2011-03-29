@@ -5,6 +5,7 @@
  (cosh)
 
  (export cosh
+         cosh-linear
          marg-expr
          marg-cc-cps-thunk
          marg-graph
@@ -118,6 +119,13 @@
 
 
  ;; most current solver using default header and preamble
+
+ (define (cosh-linear expr . limit)
+   (marg-expr header
+              (with-preamble expr)
+              (if (null? limit)
+                  #f
+                  (first limit))))
 
  (define (cosh expr . limit)
    (compmarg-expr header

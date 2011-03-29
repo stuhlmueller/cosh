@@ -34,15 +34,16 @@ TEMPLATE = """#!r6rs
 
 ))
 
-(map pretty-print (cosh expr))
+(map pretty-print (%(cosh-command)s expr))
 """
 
 @optfunc.main
+@optfunc.arghelp('linear', 'don\'t factor out subproblems')
 @optfunc.arghelp('verbose', 'display all executed commands')
 @optfunc.arghelp('debug', 'run all ikarus commands in debug mode')
 @optfunc.arghelp('time', 'record the time it takes for the compiled file to run')
 @optfunc.arghelp('keep', 'do not delete compiled file')
-def main(file, verbose=False, debug=False, time=False, keep=False):
+def main(file, linear=False, verbose=False, debug=False, time=False, keep=False):
     """Usage: %prog <file> [options]"""
     in_path = abspath(file)
     settings = {
@@ -53,7 +54,12 @@ def main(file, verbose=False, debug=False, time=False, keep=False):
     
     vprint("generating scheme code", verbose)
     code = open(in_path).read()
-    generated = TEMPLATE % { "code" : code }
+    if linear:
+        cosh_command = "cosh-linear"
+    else:
+        cosh_command = "cosh"
+    generated = TEMPLATE % { "code" : code,
+                             "cosh-command" : cosh_command }
     f = open(settings["out_path"], "w")
     f.write(generated)
     f.close()
