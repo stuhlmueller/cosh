@@ -32,27 +32,23 @@ This installation assumes that you have [git](http://git-scm.com/) and a R6RS Sc
 
 ## Usage
 
-Example:
+Create a file called myprogram.church with the following content:
 
-    #!r6rs
-    
-    (import (rnrs)
-            (cosh)
-            (scheme-tools))
-    
-    (define my-program
-      '(
-    
-        (rejection-query
-         (define x (flip))
-         (define y (flip))
-         (list x y)
-         (or x y))
-    
-        ))
-    
-    (map pretty-print
-         (cosh my-program))
+    (rejection-query
+     (define x (flip))
+     (define y (flip))
+     (list x y)
+     (or x y))
+
+Then, on the command line, type:
+
+    cosh myprogram.ss
+
+You should see the following output:
+
+    ((#f #t) . 0.3333333333333333)
+    ((#t #f) . 0.3333333333333333)
+    ((#t #t) . 0.3333333333333333)
 
 ## Concepts
 
