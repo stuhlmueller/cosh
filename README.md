@@ -42,7 +42,7 @@ Create a file called myprogram.church with the following content:
 
 Then, on the command line, type:
 
-    cosh myprogram.ss
+    cosh myprogram.church
 
 You should see the following output:
 
