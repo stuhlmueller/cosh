@@ -14,7 +14,9 @@ This installation assumes that you have [git](http://git-scm.com/) and a R6RS Sc
 
         To add a directory to your <code>$IKARUS_LIBRARY_PATH</code>, change into the directory and type <code>echo -e "\nexport IKARUS_LIBRARY_PATH=\`pwd\`:\$IKARUS_LIBRARY_PATH" >> ~/.bashrc</code>. Replace <code>~/.bashrc</code> with the location of your shell config file.
 
-    3. Add the scheme-tools/bin directory to your <code>$PATH</code>, e.g. by changing into the directory and typing <code>echo -e "\nexport PATH=\`pwd\`:\$PATH" >> ~/.bashrc</code>.
+    3. Add the scheme-tools/bin directory to your <code>$PATH</code>.
+
+        To add a directory to your <code>$PATH</code>, <code>cd</code> into the directory and type <code>echo -e "\nexport PATH=\`pwd\`:\$PATH" >> ~/.bashrc</code>.
 
 2. Install [scheme-transforms](https://github.com/stuhlmueller/scheme-transforms):
 
