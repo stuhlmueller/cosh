@@ -40,7 +40,7 @@ TEMPLATE = """#!r6rs
 @optfunc.main
 @optfunc.arghelp('linear', 'don\'t factor out subproblems')
 @optfunc.arghelp('verbose', 'display all executed commands')
-@optfunc.arghelp('debug', 'run all ikarus commands in debug mode')
+@optfunc.arghelp('debug', 'run all scheme commands in debug mode')
 @optfunc.arghelp('time', 'record the time it takes for the compiled file to run')
 @optfunc.arghelp('keep', 'do not delete compiled file')
 def main(file, linear=False, verbose=False, debug=False, time=False, keep=False):

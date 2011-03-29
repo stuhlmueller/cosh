@@ -51,3 +51,16 @@ You should see the following output:
     ((#f #t) . 0.3333333333333333)
     ((#t #f) . 0.3333333333333333)
     ((#t #t) . 0.3333333333333333)
+
+## Options
+
+    $ cosh --help
+    Usage: cosh <file> [options]
+    
+    Options:
+      -h, --help     show this help message and exit
+      -d, --debug    run all scheme commands in debug mode
+      -k, --keep     do not delete compiled file
+      -t, --time     record the time it takes for the compiled file to run
+      -v, --verbose  display all executed commands
+      -l, --linear   don't factor out subproblems
