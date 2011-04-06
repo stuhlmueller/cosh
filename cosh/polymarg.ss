@@ -18,7 +18,7 @@
          (scheme-tools watcher)
          (scheme-tools graph)
          (scheme-tools graph utils)
-         (scheme-tools math polynomial)
+         (scheme-tools math iterate)
          (scheme-tools srfi-compat :1)
          (scheme-tools srfi-compat :13)
          (scheme-tools hash)) 
@@ -74,7 +74,7 @@
 
  (define (polymarg-graph graph)
    (let* ([equations (polygraph->equations graph)]          
-          [solutions (polysolve/unique equations)])
+          [solutions (iterate equations 0.0)])
      (lookup-leaf-values graph solutions)))
 
  )

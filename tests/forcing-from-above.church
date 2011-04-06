@@ -1,0 +1,10 @@
+(define (forcing-from-above z n)
+  (rejection-query
+   (define x (flip))
+   x
+   (if (= n 0)
+       #t
+       (equal? (forcing-from-above x (- n 1))
+               z))))
+
+(forcing-from-above #t 15)

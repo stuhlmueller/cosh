@@ -1,0 +1,7 @@
+(define foo
+  (marginalize
+   (lambda () (and (flip) (flip)))))
+
+(list (foo)
+      (foo))
+

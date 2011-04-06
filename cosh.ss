@@ -4,7 +4,9 @@
 
  (cosh)
 
- (export marg-expr
+ (export cosh
+         cosh-linear
+         marg-expr
          marg-cc-cps-thunk
          marg-graph
          polymarg-expr
@@ -31,6 +33,8 @@
          (cosh polymap)
          (cosh components)
          (cosh desugar)
+         (cosh header)
+         (cosh preamble)
          (scheme-tools)
          (scheme-tools graph)
          (scheme-tools graph utils)
@@ -57,7 +61,6 @@
    (eval (local (begin-wrap (expr->body expr)))
          (expr->environment expr)))
 
-
  ;; linear solver
 
  (define (expr->cc-cps-expr header expr with-returns)
@@ -76,15 +79,15 @@
    ($ cc-cps-thunk->graph
       expr->cc-cps-thunk))
  
- ;; thunk -> dist
- (define marg-cc-cps-thunk
-   ($ marg-graph
-      cc-cps-thunk->graph))
+ ;; (thunk, graph-size-limit) -> dist
+ (define (marg-cc-cps-thunk cc-cps-thunk graph-size-limit)
+   (marg-graph
+    (simplify-polygraph!
+     (cc-cps-thunk->graph cc-cps-thunk graph-size-limit))))
 
  ;; (header, expr) -> dist
- (define marg-expr
-   ($ marg-cc-cps-thunk
-      expr->cc-cps-thunk))
+ (define (marg-expr header expr graph-size-limit)
+   (marg-cc-cps-thunk (expr->cc-cps-thunk header expr) graph-size-limit))
 
  
  ;; polynomial solver
@@ -99,8 +102,8 @@
       return-thunk->polygraph))
 
  ;; (expr, graph-size-limit) -> dist
- (define (polymarg-expr expr graph-size-limit)
-   (polymarg-return-thunk (expr->return-thunk expr)
+ (define (polymarg-expr header expr graph-size-limit)
+   (polymarg-return-thunk (expr->return-thunk header expr)
                           graph-size-limit))
 
  
@@ -111,8 +114,24 @@
    (let* ([graph (return-thunk->polygraph (expr->return-thunk header expr) graph-size-limit)]
           [graph (simplify-polygraph! graph)]
           [polymap (polygraph->polymap graph)])
-     ;; (display (polygraph->dot graph))
      (let ([components (strongly-connected-components polymap)])
        (marginalize-components graph components))))
+
+
+ ;; most current solver using default header and preamble
+
+ (define (cosh-linear expr . limit)
+   (marg-expr header
+              (with-preamble expr)
+              (if (null? limit)
+                  #f
+                  (first limit))))
+
+ (define (cosh expr . limit)
+   (compmarg-expr header
+                  (with-preamble expr)
+                  (if (null? limit)
+                      #f
+                      (first limit))))
  
  )

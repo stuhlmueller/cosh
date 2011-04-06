@@ -19,6 +19,7 @@
          link-promise->weight
          make-link-promise
          terminal-value?
+         value?
          make-root-node
          identity-cont-closure)
 
@@ -46,10 +47,13 @@
    (cond [(continuation? node) (continuation:id node)]
          [(application? node) (application:id node)]
          [else (object->id node)]))
+
+ (define (value? obj)
+   (and (not (continuation? obj))
+        (not (application? obj))))
  
  (define (terminal-value? graph node)
-   (and (not (continuation? node))
-        (not (application? node))
+   (and (value? node)
         (graph:leaf? graph node)))
 
  (define (graph:reachable-terminals graph node)
