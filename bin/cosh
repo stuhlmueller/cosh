@@ -34,7 +34,7 @@ TEMPLATE = """#!r6rs
 
 ))
 
-(map pretty-print (%(cosh-command)s expr))
+(map pretty-print (%(cosh-command)s expr %(cosh-params)s))
 """
 
 @optfunc.main
@@ -58,8 +58,13 @@ def main(file, linear=False, verbose=False, debug=False, time=False, keep=False)
         cosh_command = "cosh-linear"
     else:
         cosh_command = "cosh"
+    if verbose:
+        cosh_params = "'verbosity #t"
+    else:
+        cosh_params = "'verbosity #f"        
     generated = TEMPLATE % { "code" : code,
-                             "cosh-command" : cosh_command }
+                             "cosh-command" : cosh_command,
+                             "cosh-params" : cosh_params }
     f = open(settings["out_path"], "w")
     f.write(generated)
     f.close()
