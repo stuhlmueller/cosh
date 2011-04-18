@@ -5,7 +5,6 @@
  (cosh)
 
  (export cosh
-         cosh-linear
          marg-expr
          marg-cc-cps-thunk
          marg-graph
@@ -41,6 +40,7 @@
          (scheme-tools graph utils)
          (scheme-tools graph components)
          (scheme-tools macros)
+         (scheme-tools math)
          (scheme-tools srfi-compat :1)
          (xitomatl keywords))
 
@@ -98,7 +98,7 @@
           [marginals (opt-timeit (verbose) (marg-graph simple-graph))])
      (verbose-pe "\nSPACE:\n"
                  "- graph-size: " original-graph-size "\n"
-                 "- simple-graph-size: " (graph-size simple-graph))     
+                 "- simple-graph-size: " (graph-size simple-graph) "\n\n")     
      marginals))
 
  
@@ -119,8 +119,14 @@
                           graph-size-limit))
 
  
- ;; component solver
- 
+ ;; component solver 
+
+ (define (get-component-sizes graph components)
+   (map (lambda (comp)
+          (apply + (map (lambda (root) (length (subgraph->equations graph root)))
+                        comp)))
+        components))
+
  ;; expr -> dist
  (define (compmarg-expr header expr graph-size-limit)
    (verbose-pe "\nTIME:\n")
@@ -131,26 +137,31 @@
           [polymap (opt-timeit (verbose) (polygraph->polymap simple-graph))]
           [components (opt-timeit (verbose) (strongly-connected-components polymap))]
           [marginals (opt-timeit (verbose) (marginalize-components simple-graph components))])
-     (verbose-pe "\nSPACE:\n"
-                 "- graph-size: " original-graph-size "\n"
-                 "- simple-graph-size: " (graph-size simple-graph) "\n"
-                 "- subproblems: " (graph-size polymap) "\n"
-                 "- components: " (length components) "\n\n")
-     marginals))
+     (let ([component-sizes (get-component-sizes simple-graph components)])
+       (verbose-pe "\nSPACE:\n"
+                   "- graph-size: " original-graph-size "\n"
+                   "- simple-graph-size: " (graph-size simple-graph) "\n"
+                   "- subproblems: " (graph-size polymap) "\n"
+                   "- components: " (length components) "\n"
+                   "- mean-component: " (exact->inexact (mean component-sizes)) "\n"
+                   "- median-component: " (exact->inexact (median < component-sizes)) "\n\n")
+       marginals)))
 
 
- ;; most current solver using default header and preamble
+ (define (get-solver state-merging subproblems)
+   (cond [(and (not state-merging) (not subproblems)) (error 'get-solver "enumeration solver not available")]
+         [(not subproblems) marg-expr]
+         [else (lambda args (parameterize ([merge-continuations state-merging]) (apply compmarg-expr args)))]))
 
- (define/kw (cosh-linear expr [limit :default #f] [verbosity :default #f])
-   (parameterize ([verbose verbosity])
-                 (marg-expr header
-                            (with-preamble expr)
-                            limit)))
+ (define/kw (cosh expr
+                  [limit :default #f]
+                  [verbosity :default #f]
+                  [state-merging :default #t]
+                  [subproblems :default #t])
+   (let ([solver (get-solver state-merging subproblems)])
+     (parameterize ([verbose verbosity])
+                   (solver header
+                           (with-preamble expr)
+                           limit))))
 
- (define/kw (cosh expr [limit :default #f] [verbosity :default #f])
-   (parameterize ([verbose verbosity])
-                 (compmarg-expr header
-                                (with-preamble expr)
-                                limit)))
- 
  )
