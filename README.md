@@ -59,8 +59,10 @@ You should see the following output:
     
     Options:
       -h, --help     show this help message and exit
-      -d, --debug    run all scheme commands in debug mode
-      -k, --keep     do not delete compiled file
-      -t, --time     record the time it takes for the compiled file to run
+      -n, --nosub    don't factor out subproblems
       -v, --verbose  display all executed commands
-      -l, --linear   don't factor out subproblems
+      -o, --nostate  don't merge based on the full computation state
+      -k, --keep     do not delete compiled file
+      -l, --limit    restrict graph size
+      -t, --time     record the time it takes for the compiled file to run
+      -d, --debug    run all scheme commands in debug mode
