@@ -4,11 +4,14 @@
 
  (cosh global)
 
- (export verbose
+ (export merge-continuations
+         verbose
          verbose-pe)
 
  (import (rnrs)
          (scheme-tools))
+
+ (define merge-continuations (make-parameter #f))
 
  (define verbose (make-parameter #f))
 
