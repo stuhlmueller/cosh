@@ -5,7 +5,6 @@
  (cosh)
 
  (export cosh
-         cosh-linear
          marg-expr
          marg-cc-cps-thunk
          marg-graph
@@ -24,7 +23,8 @@
          (rnrs eval)
          (transforms)
          (cosh dot)
-         (cosh marg)         
+         (cosh marg)
+         (cosh global)
          (cosh graph)
          (cosh polymarg)
          (cosh polycommon)
@@ -39,7 +39,10 @@
          (scheme-tools graph)
          (scheme-tools graph utils)
          (scheme-tools graph components)
-         (scheme-tools srfi-compat :1))
+         (scheme-tools macros)
+         (scheme-tools math)
+         (scheme-tools srfi-compat :1)
+         (xitomatl keywords))
 
  (define (header->reserved-words header)
    (let ([defines (filter (lambda (e) (tagged-list? e 'define)) header)])
@@ -87,7 +90,16 @@
 
  ;; (header, expr) -> dist
  (define (marg-expr header expr graph-size-limit)
-   (marg-cc-cps-thunk (expr->cc-cps-thunk header expr) graph-size-limit))
+   (verbose-pe "\nTIME:\n")
+   (let* ([cc-cps-thunk (opt-timeit (verbose) (expr->cc-cps-thunk header expr))]
+          [graph (opt-timeit (verbose) (cc-cps-thunk->graph cc-cps-thunk graph-size-limit))]
+          [original-graph-size (graph-size graph)]
+          [simple-graph (opt-timeit (verbose) (simplify-polygraph! graph))]
+          [marginals (opt-timeit (verbose) (marg-graph simple-graph))])
+     (verbose-pe "\nSPACE:\n"
+                 "- graph-size: " original-graph-size "\n"
+                 "- simple-graph-size: " (graph-size simple-graph) "\n\n")     
+     marginals))
 
  
  ;; polynomial solver
@@ -107,31 +119,49 @@
                           graph-size-limit))
 
  
- ;; component solver
+ ;; component solver 
+
+ (define (get-component-sizes graph components)
+   (map (lambda (comp)
+          (apply + (map (lambda (root) (length (subgraph->equations graph root)))
+                        comp)))
+        components))
 
  ;; expr -> dist
  (define (compmarg-expr header expr graph-size-limit)
-   (let* ([graph (return-thunk->polygraph (expr->return-thunk header expr) graph-size-limit)]
-          [graph (simplify-polygraph! graph)]
-          [polymap (polygraph->polymap graph)])
-     (let ([components (strongly-connected-components polymap)])
-       (marginalize-components graph components))))
+   (verbose-pe "\nTIME:\n")
+   (let* ([return-thunk (opt-timeit (verbose) (expr->return-thunk header expr))]
+          [graph (opt-timeit (verbose) (return-thunk->polygraph return-thunk graph-size-limit))]
+          [original-graph-size (graph-size graph)]
+          [simple-graph (opt-timeit (verbose) (simplify-polygraph! graph))]
+          [polymap (opt-timeit (verbose) (polygraph->polymap simple-graph))]
+          [components (opt-timeit (verbose) (strongly-connected-components polymap))]
+          [marginals (opt-timeit (verbose) (marginalize-components simple-graph components))])
+     (let ([component-sizes (get-component-sizes simple-graph components)])
+       (verbose-pe "\nSPACE:\n"
+                   "- graph-size: " original-graph-size "\n"
+                   "- simple-graph-size: " (graph-size simple-graph) "\n"
+                   "- subproblems: " (graph-size polymap) "\n"
+                   "- components: " (length components) "\n"
+                   "- mean-component: " (exact->inexact (mean component-sizes)) "\n"
+                   "- median-component: " (exact->inexact (median < component-sizes)) "\n\n")
+       marginals)))
 
 
- ;; most current solver using default header and preamble
+ (define (get-solver state-merging subproblems)
+   (cond [(and (not state-merging) (not subproblems)) (error 'get-solver "enumeration solver not available")]
+         [(not subproblems) marg-expr]
+         [else (lambda args (parameterize ([merge-continuations state-merging]) (apply compmarg-expr args)))]))
 
- (define (cosh-linear expr . limit)
-   (marg-expr header
-              (with-preamble expr)
-              (if (null? limit)
-                  #f
-                  (first limit))))
+ (define/kw (cosh expr
+                  [limit :default #f]
+                  [verbosity :default #f]
+                  [state-merging :default #t]
+                  [subproblems :default #t])
+   (let ([solver (get-solver state-merging subproblems)])
+     (parameterize ([verbose verbosity])
+                   (solver header
+                           (with-preamble expr)
+                           limit))))
 
- (define (cosh expr . limit)
-   (compmarg-expr header
-                  (with-preamble expr)
-                  (if (null? limit)
-                      #f
-                      (first limit))))
- 
  )

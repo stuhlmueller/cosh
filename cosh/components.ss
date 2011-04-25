@@ -69,7 +69,6 @@
  ;; Components must be in topological order (i.e. if there is a link
  ;; from component A to component B, A must come first).
  (define (marginalize-components graph components)
-   ;; (pe (graph-size graph) " nodes, " (length components) " components\n\n")
    (let loop ([components components]
               [solutions '()])
      (if (null? components)

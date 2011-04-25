@@ -18,17 +18,19 @@
          application:id)
 
  (import (rnrs)
+         (cosh global)
          (scheme-tools)
          (scheme-tools srfi-compat :1)
          (scheme-tools deepcopy)
          (scheme-tools object-id))
 
  (define (make-application proc cont . args)
-   (when (not (vector? proc))
-         (repl proc cont args))
-   (list 'application
-         (object->id (list proc cont args))
-         (object->id (list proc args))))
+   (let ([app-id (if (merge-continuations) 'app (gensym))])
+     (when (not (vector? proc))
+           (repl proc cont args))
+     (list 'application
+           (object->id (list app-id proc cont args))
+           (object->id (list proc args)))))
 
  (define (application? obj)
    (tagged-list? obj 'application))
@@ -38,13 +40,13 @@
  (define application:delimited-id third)
 
  (define (application:proc c)
-   (first (id->object (application:id c))))
-
- (define (application:cont c)
    (second (id->object (application:id c))))
 
- (define (application:args c)
+ (define (application:cont c)
    (third (id->object (application:id c))))
+
+ (define (application:args c)
+   (fourth (id->object (application:id c))))
 
  (define (applications-equal? c1 c2)
    (eq? (application:id c1)

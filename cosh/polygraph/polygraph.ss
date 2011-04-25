@@ -80,7 +80,6 @@
           [subroot-node (make-root-node (sym+num 'app (application:delimited-id node)))]
           [subroot-link-promise (make-link-promise 1.0 #t)]
           [subroot-is-new (graph:add/retrieve! graph subroot-node)]
-          [pos (gensym)]
           [callback (mem
                      (lambda (value)
                        (build-graph graph

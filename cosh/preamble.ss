@@ -75,6 +75,23 @@
              '()
              (list-ref lst (sample-integer (length lst))))))
 
+     (define (%sum-repeat proc n s)
+       (if (= n 0)
+           s
+           (%sum-repeat proc
+                        (- n 1)
+                        (+ s (proc)))))
+
+     (define (sum-repeat proc n)
+       (%sum-repeat proc n 0))
+     
+     (define (nflip p)
+       (if (flip p) 1 0))
+
+     (define (binomial p n)
+       (sum-repeat (lambda () (nflip p))
+                   n))
+     
      (define (multinomial vals probs)
        (list-ref vals (sample-discrete probs)))
 
@@ -87,6 +104,17 @@
        (if (null? (first lsts)) '() (pair (cosh-apply proc (single-map first lsts))
                                           (multi-map proc (single-map rest lsts)))))
 
-     (define (many-map proc . lsts) (multi-map proc lsts))))
+     (define (many-map proc . lsts) (multi-map proc lsts))
+
+     (define (filter proc lst)
+       (if (null? lst)
+           '()
+           (let ([fst (first lst)]
+                 [filtered-rst (filter proc (rest lst))])
+             (if (proc fst)
+                 (pair fst filtered-rst)
+                 filtered-rst))))
+
+     ))
 
  )
