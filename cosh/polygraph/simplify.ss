@@ -48,6 +48,16 @@
                root-nodes)
      marginal-table))
 
+ ;; If possible, compute an explicit representation of the total
+ ;; weight given the stored weight (or false) and the new weight. This
+ ;; is possible if (1) no old weight exists or (2) both old and new
+ ;; weight exist and are numbers (not score-refs).
+ (define (update-weight stored-weight new-weight stop)
+   (cond [(not stored-weight) new-weight]
+         [(and (number? stored-weight) (number? new-weight))
+          (+ stored-weight new-weight)]
+         [else (stop #f)]))
+
  ;; For each root node in the graph, follow all paths downwards. If
  ;; probability is 1, continue. Otherwise, if target is a terminal
  ;; node, stop and store prob/score-ref for pair of root node and
@@ -59,9 +69,10 @@
      (for-each (lambda (link)
                  (when (not (seen? (pair node link)))
                        (if (graph:leaf? graph (link->target link))
-                           (hash-table-set! table
-                                            (pair root (link->target link))
-                                            (link->weight link))
+                           (let* ([index (pair root (link->target link))]
+                                  [stored-weight (hash-table-ref/default table index #f)]
+                                  [new-weight (update-weight stored-weight (link->weight link) stop)])
+                             (hash-table-set! table index new-weight))
                            (if (equal? (link->weight link) 1.0)
                                (find-marginals graph root (link->target link) table seen? stop)
                                (stop #f)))))
