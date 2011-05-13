@@ -74,7 +74,7 @@
 
  (define (polymarg-graph graph)
    (let* ([equations (polygraph->equations graph)]          
-          [solutions (iterate equations 0.0)])
+          [solutions (iterate/plain equations 0.0)])
      (lookup-leaf-values graph solutions)))
 
  )

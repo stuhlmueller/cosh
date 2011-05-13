@@ -30,7 +30,7 @@
 
  (define (marg-graph graph)
   (let-values ([(leaves eqn) (graph->eqns graph)])
-    (let ([marginal-values (iterate eqn 0.0)])
+    (let ([marginal-values (iterate/plain eqn 0.0)])
       (let ([nodename->prior (alist->hash-table marginal-values finitize-equal? finitize-hash)])
         (map (lambda (leaf-name) (pair (variable-name->node leaf-name)
                                   (hash-table-ref/default nodename->prior leaf-name 'unknown)))

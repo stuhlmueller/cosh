@@ -64,7 +64,7 @@
                          (relevant-bindings equations-1
                                             solutions)))]
           [equations (append equations-2 equations-1)])
-     (iterate equations 0.0)))
+     (iterate/plain equations 0.0)))
 
  ;; Components must be in topological order (i.e. if there is a link
  ;; from component A to component B, A must come first).
