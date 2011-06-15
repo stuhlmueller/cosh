@@ -115,6 +115,11 @@
                  (pair fst filtered-rst)
                  filtered-rst))))
 
+     (define (foldl f z xs)
+       (if (null? xs)
+           z
+           (foldl f (f z (first xs)) (rest xs))))     
+
      ))
 
  )
