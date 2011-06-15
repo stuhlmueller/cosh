@@ -19,6 +19,7 @@
              (only (scheme-tools external) void)
              (cosh continuation)
              (cosh application)
+             (cosh abort)
              (cosh))
 
      ;; Marginalizes cc-cps-proc with given args, stores resulting
@@ -53,7 +54,8 @@
               (sym+num 'marginalized-proc proc-id)))))
         'marginalizer))
 
-     ;;take two thunks and compute the KL between them. doesn't cache, so use marginalize first...
+     ;; Take two thunks and compute the KL distance between
+     ;; them. Doesn't cache, so use marginalize first.
      (define KL
        (vector
         (lambda (self k A B)
