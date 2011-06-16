@@ -80,14 +80,15 @@
           [subroot-node (make-root-node (sym+num 'app (application:delimited-id node)))]
           [subroot-link-promise (make-link-promise 1.0 #t)]
           [subroot-is-new (graph:add/retrieve! graph subroot-node)]
-          [callback (mem
+          [callback (recursive-mem
                      (lambda (value)
                        (build-graph graph
                                     graph-size-limit
                                     (lambda () (call-application-cont node value))
                                     node
                                     (make-link-promise (make-score-ref subroot-node value)
-                                                       value))))])
+                                                       value)))
+                     (lambda () #f))])
      (graph:register-callback! graph subroot-node callback)
      (if subroot-is-new
          (build-graph graph graph-size-limit subthunk subroot-node subroot-link-promise)
