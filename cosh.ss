@@ -133,18 +133,19 @@
    (let* ([return-thunk (opt-timeit (verbose) (expr->return-thunk header expr))]
           [graph (opt-timeit (verbose) (return-thunk->polygraph return-thunk graph-size-limit))]
           [original-graph-size (graph-size graph)]
-          [simple-graph (opt-timeit (verbose) (simplify-polygraph! graph))]
-          [polymap (opt-timeit (verbose) (polygraph->polymap simple-graph))]
+          [polymap (opt-timeit (verbose) (polygraph->polymap graph))]
           [components (opt-timeit (verbose) (strongly-connected-components polymap))]
-          [marginals (opt-timeit (verbose) (marginalize-components simple-graph components))])
-     (let ([component-sizes (get-component-sizes simple-graph components)])
+          [marginals (opt-timeit (verbose) (marginalize-components graph components))])
+     (let ([component-sizes (get-component-sizes graph components)])
        (verbose-pe "\nSPACE:\n"
                    "- graph-size: " original-graph-size "\n"
-                   "- simple-graph-size: " (graph-size simple-graph) "\n"
                    "- subproblems: " (graph-size polymap) "\n"
                    "- components: " (length components) "\n"
                    "- mean-component: " (exact->inexact (mean component-sizes)) "\n"
-                   "- median-component: " (exact->inexact (median < component-sizes)) "\n\n")
+                   "- median-component: " (exact->inexact (median < component-sizes))
+                   "\n\n")
+       (when (verbose)
+             (polygraph->file graph))
        marginals)))
 
 
