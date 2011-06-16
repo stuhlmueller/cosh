@@ -12,6 +12,7 @@
  (import (rnrs)
          (cosh polycommon)
          (cosh continuation)
+         (cosh abort)
          (cosh application)
          (scheme-tools)
          (scheme-tools object-id)
@@ -43,15 +44,16 @@
            [else build-graph:value]))
    (when
     (or (not graph-size-limit)
-        (<= (graph-size graph) graph-size-limit))
-    (let* ([node (thunk)]
-           [handler (get-handler node)]
-           [is-new (graph:add/link! graph last-node node
-                                    (link-promise->label link-promise)
-                                    (link-promise->weight link-promise))])
-      (if is-new
-          (handler graph graph-size-limit node last-node)
-          (graph:notify-ancestors-of-connection! graph node last-node)))))
+        (<= (graph-size graph) graph-size-limit)) ;; FIXME: graph-size slow?
+    (let ([node (thunk)])
+      (when (not (abort? node))
+            (let* ([handler (get-handler node)]
+                   [is-new (graph:add/link! graph last-node node
+                                            (link-promise->label link-promise)
+                                            (link-promise->weight link-promise))])
+              (if is-new
+                  (handler graph graph-size-limit node last-node)
+                  (graph:notify-ancestors-of-connection! graph node last-node)))))))
 
  ;; Notify the callbacks of all ancestors that we found a terminal.
  (define (build-graph:value graph graph-size-limit node last-node)
@@ -60,14 +62,14 @@
  ;; Extend graph by exploring all possible branches of the (xrp)
  ;; continuation.
  (define (build-graph:continuation graph graph-size-limit node last-node)
-   (map (lambda (value score)
-          (build-graph graph
-                       graph-size-limit
-                       (lambda () (call-continuation node value))
-                       node
-                       (make-link-promise score value)))
-        (continuation:support node)
-        (continuation:scores node)))
+   (for-each (lambda (value score)
+               (build-graph graph
+                            graph-size-limit
+                            (lambda () (call-continuation node value))
+                            node
+                            (make-link-promise score value)))
+             (continuation:support node)
+             (continuation:scores node)))
 
  ;; Make thunk for delimited application, root node for application
  ;; subgraph, callback to continue with outer continuation when
