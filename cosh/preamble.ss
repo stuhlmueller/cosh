@@ -118,7 +118,10 @@
      (define (foldl f z xs)
        (if (null? xs)
            z
-           (foldl f (f z (first xs)) (rest xs))))     
+           (foldl f (f z (first xs)) (rest xs))))
+
+     (define (compose f g)
+       (lambda args (f (apply g args))))
 
      ))
 
