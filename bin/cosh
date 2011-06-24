@@ -34,7 +34,16 @@ TEMPLATE = """#!r6rs
 
 ))
 
-(map pretty-print (cosh expr %(cosh-params)s))
+(define marginal->value car)
+(define marginal->log-prob cdr)
+(let ([marginals (cosh expr %(cosh-params)s)])
+  (for-each (lambda (marginal)
+       (pe (marginal->value marginal) ": "
+           (exp (marginal->log-prob marginal))
+           " (" (marginal->log-prob marginal) ")\n"))
+     marginals)
+  (when %(verbose)s
+    (pe "\nsum: " (exp (apply logsumexp (map marginal->log-prob marginals))) "\n")))
 """
 
 def val_string(obj):
@@ -53,13 +62,11 @@ def param_string(params):
 
 @optfunc.main
 @optfunc.arghelp('limit', 'restrict graph size')
-@optfunc.arghelp('nosub', 'don\'t factor out subproblems')
-@optfunc.arghelp('nostate', 'don\'t merge based on the full computation state')
 @optfunc.arghelp('verbose', 'display all executed commands')
 @optfunc.arghelp('debug', 'run all scheme commands in debug mode')
-@optfunc.arghelp('time', 'record the time it takes for the compiled file to run')
+@optfunc.arghelp('time', 'record runtime')
 @optfunc.arghelp('keep', 'do not delete compiled file')
-def main(file, limit="", nostate=False, nosub=False, verbose=False, debug=False, time=False, keep=False):
+def main(file, limit="", verbose=False, debug=False, time=False, keep=False):
     """Usage: %prog <file> [options]"""
     in_path = abspath(file)
     settings = {
@@ -73,19 +80,19 @@ def main(file, limit="", nostate=False, nosub=False, verbose=False, debug=False,
 
     params = {
         "limit" : limit,
-        "subproblems" : not nosub,
-        "state-merging" : not nostate,
         "verbosity" : verbose
         }
     
-    generated = TEMPLATE % { "code" : code, "cosh-params" : param_string(params) }
+    generated = TEMPLATE % { "code" : code,
+                             "cosh-params" : param_string(params),
+                             "verbose" : val_string(verbose)}
     f = open(settings["out_path"], "w")
     f.write(generated)
     f.close()
 
-    vprint("running generated scheme with ikarus", verbose)
+    vprint("running generated scheme with ikarus\n", verbose)
     pre = datetime.now()
-    call("export IKARUS_LIBRARY_PATH=%(cosh_path)s:$IKARUS_LIBRARY_PATH && ikarus %(debug)s --r6rs-script '%(out_path)s'" % settings, verbose)
+    call("export IKARUS_LIBRARY_PATH=%(cosh_path)s:$IKARUS_LIBRARY_PATH && ikarus %(debug)s --r6rs-script '%(out_path)s'\n" % settings, verbose)
     post = datetime.now()    
 
     if time:

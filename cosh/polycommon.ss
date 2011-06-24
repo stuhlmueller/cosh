@@ -36,7 +36,7 @@
          (scheme-tools srfi-compat :1)) 
  
  (define (make-root-node id)
-   (make-continuation id '(init) '(1.0)))
+   (make-continuation id '(init) '(0.0)))
 
  (define identity-cont-closure
    (vector (lambda (self top-value) top-value)

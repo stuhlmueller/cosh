@@ -19,7 +19,8 @@
 
  (define (equation->symbols equation)
    (cond [(null? equation) '()]
-         [(or (eq? equation '+)
+         [(or (eq? equation 'logsumexp)
+              (eq? equation '+)
               (eq? equation '=)
               (eq? equation '*)
               (eq? equation '/)) '()]
@@ -56,11 +57,10 @@
          '()
          component))
 
- (define UNBOUND (gensym))
- 
  (define (hash-table-set!/assert-consistent table key value)
-   (let ([existing-value (hash-table-ref/default table key UNBOUND)])
-     (if (eq? existing-value UNBOUND)
+   (let* ([hash-table-miss (gensym)]
+          [existing-value (hash-table-ref/default table key hash-table-miss)])
+     (if (eq? existing-value hash-table-miss)
          (hash-table-set! table key value)
          (when (not (equal? existing-value value))
                (begin (pe " " key " is bound to " existing-value ", can't set to " value "\n")
@@ -73,7 +73,8 @@
    (let* ([equations-1 (component-equations graph component)]
           [equations-2 (relevant-solution-equations equations-1 solutions)]
           [equations (append equations-1 equations-2)]
-          [new-solutions (iterate/plain equations 0.0)])
+          [iterator-env (environment '(rnrs) '(scheme-tools math))]
+          [new-solutions (iterate/eqns equations 0.0 'env iterator-env)])
      (for-each (lambda (binding)
                  (hash-table-set!/assert-consistent solutions
                                                     (first binding)

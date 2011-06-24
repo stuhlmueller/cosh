@@ -29,7 +29,7 @@
  (define (return-thunk->polygraph thunk graph-size-limit)
    (let ([graph (make-graph)]
          [root-node (make-root-node 'root)]
-         [root-link-promise (make-link-promise 1.0 #t)])
+         [root-link-promise (make-link-promise 0.0 #t)])
      (graph:add-node! graph root-node)
      (graph:set-root! graph root-node)
      (build-graph graph graph-size-limit thunk root-node root-link-promise)
@@ -80,7 +80,7 @@
  (define (build-graph:application graph graph-size-limit node last-node)
    (let* ([subthunk (lambda () (call-application-with-cont node identity-cont-closure))]
           [subroot-node (make-root-node (sym+num 'app (application:delimited-id node)))]
-          [subroot-link-promise (make-link-promise 1.0 #t)]
+          [subroot-link-promise (make-link-promise 0.0 #t)]
           [subroot-is-new (graph:add/retrieve! graph subroot-node)]
           [callback (recursive-mem
                      (lambda (value)

@@ -76,11 +76,11 @@
  (define (node->eqn root node parent-links)
    `(= ,(node->variable-name root node)
        ,(if (null? parent-links)
-            1.0
-            `(+ ,@(map (lambda (link)
-                         `(* ,(link->variable/weight link)
-                             ,(node->variable-name root (link->target link))))
-                       parent-links)))))
+            0.0
+            `(logsumexp ,@(map (lambda (link)
+                                 `(+ ,(link->variable/weight link)
+                                     ,(node->variable-name root (link->target link))))
+                               parent-links)))))
 
  (define (lookup-leaf-values graph solutions)
    (let ([leaves (graph:reachable-terminals graph (graph:root graph))])
@@ -92,7 +92,7 @@
  ;; FIXME: convert to return hash table
  (define (polymarg-graph graph)
    (let* ([equations (polygraph->equations graph)]          
-          [solutions (iterate/plain equations 0.0)])
+          [solutions (iterate/eqns equations 0.0)])
      (lookup-leaf-values graph solutions)))
 
  )

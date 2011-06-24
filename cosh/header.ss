@@ -82,8 +82,8 @@
           (make-continuation k
                              (list #t #f)
                              (if (not (null? p))
-                                 (list (first p) (- 1.0 (first p)))
-                                 (list .5 .5))))
+                                 (list (log (first p)) (log (- 1.0 (first p))))
+                                 (list (log .5) (log .5)))))
         'flip))
 
      (define sample-integer
@@ -91,7 +91,7 @@
         (lambda (self k n)
           (make-continuation k
                              (iota n)
-                             (make-list n (/ 1.0 n))))
+                             (make-list n (- (log n)))))
         'sample-integer))
 
      (define sample-discrete
@@ -99,7 +99,7 @@
         (lambda (self k probs)
           (make-continuation k
                              (iota (length probs))
-                             probs))
+                             (map log probs)))
         'sample-discrete))
           
 

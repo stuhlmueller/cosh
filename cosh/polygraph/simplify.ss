@@ -73,7 +73,7 @@
                                   [stored-weight (hash-table-ref/default table index #f)]
                                   [new-weight (update-weight stored-weight (link->weight link) stop)])
                              (hash-table-set! table index new-weight))
-                           (if (equal? (link->weight link) 1.0)
+                           (if (equal? (link->weight link) 0.0)
                                (find-marginals graph root (link->target link) table seen? stop)
                                (stop #f)))))
                child-links)))

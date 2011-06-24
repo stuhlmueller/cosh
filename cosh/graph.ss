@@ -30,10 +30,10 @@
    (node->graph (thunk)))
 
  (define (add-root graph)
-   (let ([new-root-cont (make-continuation 'root '(init) '(1.0))]
+   (let ([new-root-cont (make-continuation 'root '(init) '(0.0))]
          [old-root-cont (graph:root graph)])
      (graph:add-node! graph new-root-cont)
-     (graph:link! graph new-root-cont old-root-cont 'init 1.0)
+     (graph:link! graph new-root-cont old-root-cont 'init 0.0)
      (graph:set-root! graph new-root-cont)
      graph))
 
