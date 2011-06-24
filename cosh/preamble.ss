@@ -98,11 +98,17 @@
      (define (map proc . lsts)
        (if (null? (rest lsts)) (single-map proc (first lsts)) (multi-map proc lsts)))
 
-     (define (single-map proc lst) (if (null? lst) '() (pair (proc (first lst)) (map proc (rest lst)))))
+     (define (single-map proc lst)
+       (if (null? lst)
+           '()
+           (pair (proc (first lst))
+                 (map proc (rest lst)))))
 
      (define (multi-map proc lsts) ;;takes list of lists and proc of that many arguments.
-       (if (null? (first lsts)) '() (pair (cosh-apply proc (single-map first lsts))
-                                          (multi-map proc (single-map rest lsts)))))
+       (if (null? (first lsts))
+           '()
+           (pair (apply proc (single-map first lsts))
+                 (multi-map proc (single-map rest lsts)))))
 
      (define (many-map proc . lsts) (multi-map proc lsts))
 
