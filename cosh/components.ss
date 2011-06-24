@@ -14,6 +14,7 @@
          (scheme-tools hash)
          (scheme-tools watcher)
          (scheme-tools)
+         (cosh global)
          (cosh polymarg)
          (cosh polycommon))
 
@@ -66,6 +67,13 @@
                (begin (pe " " key " is bound to " existing-value ", can't set to " value "\n")
                       (error #f "hash-table-set!/assert-unbound: not unbound"))))))
 
+ (define (iterate-with-message equations)
+   (let ([iterator-env (environment '(rnrs) '(scheme-tools math))])
+     (let-values ([(solutions final-delta) (iterate/eqns equations 0.0 'env iterator-env)])
+       (when (not (= final-delta 0.0))
+             (verbose-pe (verbose) "fixed-point iterator: final delta " final-delta "\n"))
+       solutions)))
+
  ;; component: a list of polymap nodes (= root nodes for subproblems)
  ;; solutions: association list of variable names (?) and values
  ;; return value: new solutions
@@ -73,8 +81,7 @@
    (let* ([equations-1 (component-equations graph component)]
           [equations-2 (relevant-solution-equations equations-1 solutions)]
           [equations (append equations-1 equations-2)]
-          [iterator-env (environment '(rnrs) '(scheme-tools math))]
-          [new-solutions (iterate/eqns equations 0.0 'env iterator-env)])
+          [new-solutions (iterate-with-message equations)])
      (for-each (lambda (binding)
                  (hash-table-set!/assert-consistent solutions
                                                     (first binding)
