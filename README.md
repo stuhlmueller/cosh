@@ -48,9 +48,11 @@ Then, on the command line, type:
 
 You should see the following output:
 
-    ((#f #t) . 0.3333333333333333)
-    ((#t #f) . 0.3333333333333333)
-    ((#t #t) . 0.3333333333333333)
+    (#f #t): 0.3333333333333332 (-1.09861228866811)
+    (#t #f): 0.3333333333333332 (-1.09861228866811)
+    (#t #t): 0.3333333333333332 (-1.09861228866811)
+
+This shows the probability (and log probability) of each possible program return value.
 
 ## Options
 
