@@ -32,6 +32,8 @@ This installation assumes that you have [git](http://git-scm.com/) and a R6RS Sc
 
     3. Add the cosh/bin directory to your <code>$PATH</code> (see above).
 
+4. Reload your shell config file, e.g., via <code>source ~/.bashrc</code>.
+
 ## Usage
 
 Create a file called myprogram.church with the following content:
