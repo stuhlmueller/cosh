@@ -21,24 +21,43 @@
          (scheme-tools math iterate)
          (scheme-tools srfi-compat :1)
          (scheme-tools srfi-compat :13)
-         (scheme-tools hash)) 
+         (scheme-tools hash))
 
  (define (polygraph->equations graph)
    (union
     (map (lambda (root) (subgraph->equations graph root))
          (graph:root-nodes graph))
     finitize-equal?))
- 
- (define (subgraph->equations graph root)
-   (let ([seen? (make-watcher)])
-     (let* ([leaves (graph:reachable-terminals graph root)])
-       (let node->equations ([node root])
-         (pair
-          (node->eqn graph root node)
-          (apply append
-                 (map (lambda (child) (if (seen? child) '() (node->equations child)))
-                      (graph:children graph node))))))))
 
+ ;; go through subgraph top to bottom
+ ;; make a hash table that stores for each node what the incoming links are
+ ;; convert table to equations
+ (define (subgraph->equations graph root)
+   (let ([seen? (make-watcher)]
+         [equation-table (make-finitize-hash-table)])
+     (let nodes->equation-table ([nodes (list root)])
+       (when (not (null? nodes))
+             (let ([node (first nodes)])
+               (if (not (seen? node))
+                   (let ([child-links (graph:child-links graph node)])
+                     (for-each (lambda (child-link)
+                                 (hash-table-set! equation-table
+                                                  (link->target child-link)
+                                                  (pair (make-link (link->label child-link)
+                                                                   (link->weight child-link)
+                                                                   node)
+                                                        (hash-table-ref/default equation-table
+                                                                                (link->target child-link)
+                                                                                '()))))
+                               child-links)
+                     (nodes->equation-table (append (map link->target child-links)
+                                                    (rest nodes))))
+                   (nodes->equation-table (rest nodes))))))
+     (hash-table-fold equation-table
+                      (lambda (node links eqns)
+                        (pair (node->eqn root node links) eqns))
+                      (list (node->eqn root root '())))))
+ 
  (define (node->variable-name root node)
    (sym-append 'g (node:id root) 'n (node:id node)))
 
@@ -53,28 +72,27 @@
             (node->variable-name (score-ref->root weight)
                                  (score-ref->terminal-node weight))]
            [else (error weight "unknown link weight type")])))
-
- (define (node->eqn graph root node)
-   (let ([parent-links (graph:parent-links graph node)])
-     `(= ,(node->variable-name root node)
-         ,(if (null? parent-links)
-              1.0
-              `(+ ,@(map (lambda (link)
-                           `(* ,(link->variable/weight link)
-                               ,(node->variable-name root (link->target link))))
-                         (filter (lambda (link) (graph:reachable? graph root (link->target link)))
-                                 parent-links)))))))
+ 
+ (define (node->eqn root node parent-links)
+   `(= ,(node->variable-name root node)
+       ,(if (null? parent-links)
+            0.0
+            `(logsumexp ,@(map (lambda (link)
+                                 `(+ ,(link->variable/weight link)
+                                     ,(node->variable-name root (link->target link))))
+                               parent-links)))))
 
  (define (lookup-leaf-values graph solutions)
    (let ([leaves (graph:reachable-terminals graph (graph:root graph))])
      (map (lambda (node)
             (let ([var-name (node->variable-name (graph:root graph) node)])
-              (pair node (cdr (assoc var-name solutions)))))
+              (pair node (hash-table-ref solutions var-name))))
           leaves)))
 
+ ;; FIXME: convert to return hash table
  (define (polymarg-graph graph)
    (let* ([equations (polygraph->equations graph)]          
-          [solutions (iterate equations 0.0)])
+          [solutions (iterate/eqns equations 0.0)])
      (lookup-leaf-values graph solutions)))
 
  )

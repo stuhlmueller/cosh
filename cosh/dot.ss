@@ -33,6 +33,9 @@
                   "label=\"" (node->name graph node) "\""
                   "]\n"))
 
+ (define (readable-number n)
+   (->string:n n 5))
+
  ;; If the target is a leaf node, don't link directly to it but
  ;; introduce a new node in the graph in order to make the resulting
  ;; graph easier to parse visually.
@@ -57,7 +60,7 @@
                        (if (score-ref? weight)
                            (string-append (node->name graph (score-ref->root weight)) ":"
                                           (node->name graph (score-ref->terminal-node weight)))
-                           (->string weight))
+                           (readable-number weight))
                         "\""                  
                        "]\n")))))
 

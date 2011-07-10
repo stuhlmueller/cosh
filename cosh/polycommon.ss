@@ -7,8 +7,7 @@
 
  (cosh polycommon)
 
- (export graph:reachable?
-         graph:reachable-terminals
+ (export graph:reachable-terminals
          graph:notify-ancestors-of-connection!
          node:id
          score-ref->terminal-node
@@ -37,7 +36,7 @@
          (scheme-tools srfi-compat :1)) 
  
  (define (make-root-node id)
-   (make-continuation id '(init) '(1.0)))
+   (make-continuation id '(init) '(0.0)))
 
  (define identity-cont-closure
    (vector (lambda (self top-value) top-value)
@@ -66,27 +65,15 @@
              (make-watcher)
              '()))
 
- ;; FIXME: This is horribly inefficient
- (define (graph:reachable? graph from to)
-   (let ([reachables (graph:reachable graph from)]
-         [to-id (node:id to)])
-     (any (lambda (x) x)
-          (map (lambda (n) (equal? n to-id))
-               reachables))))
-
- (define (graph:reachable graph from)
-   (traverse from
-             (lambda (node) (graph:children graph node))
-             (lambda (node reachable)
-               (cons (node:id node)
-                     (apply append reachable)))
-             (make-watcher)
-             '()))
-
+ (define (graph:terminals&callbacks graph node last-node)
+   (let ([terminals (graph:reachable-terminals graph node)]
+         [callbacks (graph:ancestor-callbacks graph last-node)])
+     (values terminals callbacks)))
+ 
  (define (graph:notify-ancestors-of-connection! graph node last-node)
-   (let ([terminals (graph:reachable-terminals graph node)])
+   (let-values ([(terminals callbacks) (graph:terminals&callbacks graph node last-node)])
      (map (lambda (callback) (map (lambda (terminal) (callback terminal)) terminals))
-          (graph:ancestor-callbacks graph last-node))))
+          callbacks)))
 
  (define (make-score-ref root-node terminal-node)
    (list 'score-ref root-node terminal-node))

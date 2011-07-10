@@ -27,7 +27,9 @@
  (define (make-application proc cont . args)
    (let ([app-id (if (merge-continuations) 'app (gensym))])
      (when (not (vector? proc))
-           (repl proc cont args))
+           (begin
+             (pe "Error: Tried to apply non-procedure object. Entering REPL ...\n")
+             (repl proc cont args)))
      (list 'application
            (object->id (list app-id proc cont args))
            (object->id (list proc args)))))

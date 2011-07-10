@@ -19,6 +19,7 @@
              (only (scheme-tools external) void)
              (cosh continuation)
              (cosh application)
+             (cosh abort)
              (cosh))
 
      ;; Marginalizes cc-cps-proc with given args, stores resulting
@@ -53,7 +54,8 @@
               (sym+num 'marginalized-proc proc-id)))))
         'marginalizer))
 
-     ;;take two thunks and compute the KL between them. doesn't cache, so use marginalize first...
+     ;; Take two thunks and compute the KL distance between
+     ;; them. Doesn't cache, so use marginalize first.
      (define KL
        (vector
         (lambda (self k A B)
@@ -80,8 +82,8 @@
           (make-continuation k
                              (list #t #f)
                              (if (not (null? p))
-                                 (list (first p) (- 1.0 (first p)))
-                                 (list .5 .5))))
+                                 (list (log (first p)) (log (- 1.0 (first p))))
+                                 (list (log .5) (log .5)))))
         'flip))
 
      (define sample-integer
@@ -89,7 +91,7 @@
         (lambda (self k n)
           (make-continuation k
                              (iota n)
-                             (make-list n (/ 1.0 n))))
+                             (make-list n (- (log n)))))
         'sample-integer))
 
      (define sample-discrete
@@ -97,7 +99,7 @@
         (lambda (self k probs)
           (make-continuation k
                              (iota (length probs))
-                             probs))
+                             (map log probs)))
         'sample-discrete))
           
 

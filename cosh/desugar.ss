@@ -272,7 +272,9 @@
 
  (define (keyword? expr) (or (tagged-list? expr 'or)
                              (tagged-list? expr 'and)
-                             (tagged-list? expr 'apply)))
+                             (tagged-list? expr 'apply)
+                             (tagged-list? expr 'abort!)))
+ 
   (define (desugar-or sexpr)
    (if (= (length sexpr) 2)
        (second sexpr)
@@ -286,10 +288,14 @@
        `(if ,(second sexpr)
             ,(desugar-and `(and ,@(cddr sexpr)))
             #f)))
+
+  (define (desugar-abort expr)
+    `(tag 'abort abort))
  
  (define (desugar-keyword expr)
    (cond ((eq? (car expr) 'or) (desugar-or expr))
          ((eq? (car expr) 'and) (desugar-and expr))
+         ((eq? (car expr) 'abort!) (desugar-abort expr))
          ((eq? (car expr) 'apply)
           `(cosh-apply ,@(cdr expr)))))
 

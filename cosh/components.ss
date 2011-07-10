@@ -14,67 +14,86 @@
          (scheme-tools hash)
          (scheme-tools watcher)
          (scheme-tools)
+         (cosh global)
          (cosh polymarg)
          (cosh polycommon))
 
  (define (equation->symbols equation)
    (cond [(null? equation) '()]
+         [(or (eq? equation 'logsumexp)
+              (eq? equation '+)
+              (eq? equation '=)
+              (eq? equation '*)
+              (eq? equation '/)) '()]
          [(symbol? equation) (list equation)]
          [(list? equation) (apply append (map equation->symbols equation))]
          [else '()]))
- 
- (define (equations->symbol-index equations)
-   (let ([table (make-eq-hash-table)])
-     (map (lambda (equation)
-            (map (lambda (symbol) (hash-table-set! table symbol #t))
-                 (equation->symbols equation)))
-          equations)
-     table))
 
+ (define (equations->symbols equations)
+   (fold (lambda (equation symbols)
+           (append (equation->symbols equation) symbols))
+         '()
+         equations))
+
+ ;; Filter out duplicate objects
+ (define (unique objects)
+   (let ([seen? (make-watcher)])
+     (filter (lambda (obj) (not (seen? obj))) objects)))
+ 
  ;; Return only those bindings that talk about variables that occur in
  ;; the equations.
- (define (relevant-bindings equations bindings)
-   (let* ([symbol-table (equations->symbol-index equations)]
-          [relevant? (lambda (binding) (hash-table-ref/default symbol-table (first binding) #f))])
-     (filter relevant? bindings)))
-
- ;; Filter out duplicate bindings.
- (define (unique-bindings bindings)
-   (let ([seen? (make-watcher)])
-     (filter (lambda (binding) (not (seen? binding))) bindings)))
+ (define (relevant-solution-equations equations solutions)
+   (let* ([symbols (unique (equations->symbols equations))]
+          [equations (filter-map (lambda (symbol)
+                                   (let ([binding (hash-table-ref/default solutions symbol #f)])
+                                     (if binding
+                                         `(= ,symbol ,binding)
+                                         #f)))
+                                 symbols)])
+     (unique equations)))
  
- ;; Takes in an association list of variable names and values,
- ;; generates equations.
- (define (bindings->equations bindings)
-   (map (lambda (binding) `(= ,(first binding) ,(rest binding)))
-        bindings))
-
  (define (component-equations graph component)
-   (union (map (lambda (root) (subgraph->equations graph root))
-               component)
-          equal?))
+   (fold (lambda (node eqns)
+           (append (subgraph->equations graph node) eqns))
+         '()
+         component))
+
+ (define (hash-table-set!/assert-consistent table key value)
+   (let* ([hash-table-miss (gensym)]
+          [existing-value (hash-table-ref/default table key hash-table-miss)])
+     (if (eq? existing-value hash-table-miss)
+         (hash-table-set! table key value)
+         (when (not (equal? existing-value value))
+               (begin (pe " " key " is bound to " existing-value ", can't set to " value "\n")
+                      (error #f "hash-table-set!/assert-unbound: not unbound"))))))
+
+ (define (iterate-with-message equations)
+   (let ([iterator-env (environment '(rnrs) '(scheme-tools math))])
+     (let-values ([(solutions final-delta) (iterate/eqns equations 0.0 'env iterator-env)])
+       (when (not (= final-delta 0.0))
+             (verbose-pe (verbose) "fixed-point iterator: final delta " final-delta "\n"))
+       solutions)))
 
  ;; component: a list of polymap nodes (= root nodes for subproblems)
  ;; solutions: association list of variable names (?) and values
  ;; return value: new solutions
- (define (marginalize-component graph component solutions)
+ (define (marginalize-component! graph component solutions)
    (let* ([equations-1 (component-equations graph component)]
-          [equations-2 (bindings->equations
-                        (unique-bindings
-                         (relevant-bindings equations-1
-                                            solutions)))]
-          [equations (append equations-2 equations-1)])
-     (iterate equations 0.0)))
+          [equations-2 (relevant-solution-equations equations-1 solutions)]
+          [equations (append equations-1 equations-2)]
+          [new-solutions (iterate-with-message equations)])
+     (for-each (lambda (binding)
+                 (hash-table-set!/assert-consistent solutions
+                                                    (first binding)
+                                                    (rest binding)))
+               new-solutions)))
 
  ;; Components must be in topological order (i.e. if there is a link
  ;; from component A to component B, A must come first).
  (define (marginalize-components graph components)
-   (let loop ([components components]
-              [solutions '()])
-     (if (null? components)
-         (lookup-leaf-values graph solutions)
-         (let ([component-solutions (marginalize-component graph (first components) solutions)])
-           (loop (rest components)
-                 (append solutions component-solutions))))))
+   (let ([solutions (make-eq-hash-table)])
+     (for-each (lambda (component) (marginalize-component! graph component solutions))
+               components)
+     (lookup-leaf-values graph solutions)))
 
  )

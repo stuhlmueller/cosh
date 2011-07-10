@@ -1,5 +1,5 @@
 #!/usr/bin/python
-import os, sys
+import os, sys, commands
 from subprocess import Popen
 from utils import optfunc
 from os.path import abspath, dirname
@@ -22,21 +22,6 @@ def call(cmd, verbose=False, allow_fail=False):
     else:
         return status
 
-TEMPLATE = """#!r6rs
-
-(import (rnrs)
-        (scheme-tools)
-        (cosh))
-
-(define expr
-  '(
-%(code)s
-
-))
-
-(map pretty-print (cosh expr %(cosh-params)s))
-"""
-
 def val_string(obj):
     if type(obj) == str and obj.isdigit():
         return int(obj)
@@ -51,49 +36,67 @@ def param_string(params):
         s += " '%s %s " % (key, val_string(val))
     return s
 
+def get_scheme_command():
+    """
+    Check whether vicare or ikarus scheme are available and return
+    appropriate command.
+    """
+    scheme_commands = ["vicare", "ikarus"]
+    for scheme_command in scheme_commands:
+        out = commands.getoutput("which %s" % scheme_command).strip()
+        if out:
+            return out
+    return False
+
 @optfunc.main
 @optfunc.arghelp('limit', 'restrict graph size')
-@optfunc.arghelp('nosub', 'don\'t factor out subproblems')
-@optfunc.arghelp('nostate', 'don\'t merge based on the full computation state')
 @optfunc.arghelp('verbose', 'display all executed commands')
 @optfunc.arghelp('debug', 'run all scheme commands in debug mode')
-@optfunc.arghelp('time', 'record the time it takes for the compiled file to run')
+@optfunc.arghelp('time', 'record runtime')
 @optfunc.arghelp('keep', 'do not delete compiled file')
-def main(file, limit="", nostate=False, nosub=False, verbose=False, debug=False, time=False, keep=False):
+def main(file, limit="", verbose=False, debug=False, time=False, keep=False):
     """Usage: %prog <file> [options]"""
     in_path = abspath(file)
+    cosh_path = abspath(dirname(sys.argv[0]))
     settings = {
         "debug" : debug and "--debug" or "",
         "out_path" : in_path + ".tmp",
-        "cosh_path" : abspath(dirname(sys.argv[0]))
+        "cosh_path" : cosh_path
     }
     
-    vprint("generating scheme code", verbose)
+    scheme_command = get_scheme_command()
+    settings["scheme_bin"] = scheme_command
+    if not scheme_command:
+        print "Could not find vicare or ikarus!"
+        exit()
+    
+    vprint("Generating scheme code ...", verbose)
     code = open(in_path).read()
 
     params = {
         "limit" : limit,
-        "subproblems" : not nosub,
-        "state-merging" : not nostate,
         "verbosity" : verbose
         }
-    
-    generated = TEMPLATE % { "code" : code, "cosh-params" : param_string(params) }
+
+    template = open(os.path.join(cosh_path, "cosh.tpl")).read()
+    generated = template % { "code" : code,
+                             "cosh-params" : param_string(params),
+                             "verbose" : val_string(verbose)}
     f = open(settings["out_path"], "w")
     f.write(generated)
     f.close()
 
-    vprint("running generated scheme with ikarus", verbose)
+    vprint("Running generated scheme in %s ...\n" % scheme_command, verbose)
     pre = datetime.now()
-    call("export IKARUS_LIBRARY_PATH=%(cosh_path)s:$IKARUS_LIBRARY_PATH && ikarus %(debug)s --r6rs-script '%(out_path)s'" % settings, verbose)
+    call("%(scheme_bin)s %(debug)s --r6rs-script '%(out_path)s'\n" % settings, verbose)
     post = datetime.now()    
 
     if time:
         delta = post-pre
         seconds = delta.seconds + delta.microseconds/1000000.0
-        print("runtime: %fs" % seconds)
+        print("Runtime: %fs" % seconds)
 
     if not keep:
-        vprint("removing compiled file", verbose)
+        vprint("Removing compiled file ...", verbose)
         call("rm -f '%(out_path)s'" % settings, verbose)        
     

@@ -24,8 +24,8 @@
      (build-polymap! graph seen? polymap (graph:root graph) (graph:root graph))))
 
  (define (build-polymap! graph seen? polymap root node)
-   (when (not (seen? (pair root node)))
-         (when (null? (graph:parents graph node))
+   (when (not (seen? (pair node root)))
+         (when (null? (graph:parent-links graph node))
                (graph:add-node! polymap node))
          (for-each (lambda (link)
                      (let ([weight (link->weight link)])
