@@ -1,10 +1,11 @@
 #!r6rs
 
 ;; In this simplified version of the UDP algorithm, we assume that the
-;; domains of all expressions are known in order not to need cps. We
-;; further distinguish functions using eq? in order not to need cc.
+;; domains of all expressions are known (all Boolean) in order not to
+;; need cps. We further distinguish functions using eq? in order not
+;; to need cc.
 
-;; We lift our program to operate on symbolic distributions, i.e., to
+;; We lift our program to operate on symbolic distributions and to
 ;; return a list of equations. Applications marginalize over operator
 ;; and argument distributions. Using memoization, we compute the
 ;; equations corresponding to any particular equation only once.
@@ -30,20 +31,20 @@
                '(cosh dist)
                '(scheme-tools)
                '(scheme-tools math symbolic)
+               '(scheme-tools math iterate)
                '(scheme-tools srfi-compat :1)
                '(scheme-tools hash)))
 
 (define cosh-header
   '(
 
+    ;; Variable names
+    
     (define id-table
       (make-finitize-hash-table))
 
-    (define dist-table
-      (make-finitize-hash-table))    
-
     (define make-id (get-counter))
-    
+
     (define (cosh-id obj)
       (hash-table-ref id-table
                       obj
@@ -51,38 +52,56 @@
                         (let ([id (make-id)])
                           (hash-table-set! id-table obj id)
                           id))))
+
+    (define (variable obj return)
+      (sym-append 'a (cosh-id obj) 'v (cosh-id return)))
+
+    ;; Distribution cache
     
-    (define (variable app val)
-      (sym-append 'a (cosh-id app) 'v (cosh-id val)))        
+    (define dist-table
+      (make-finitize-hash-table))    
     
     (define (cache type f)
       (lambda args
-        (let ([id (cons type args)])
-          (when (not (hash-table-exists? dist-table id))
-                (hash-table-set! dist-table id 'seen)
-                (hash-table-set! dist-table id (apply f args)))
+        (let ([obj (cons type args)])
+          (when (not (hash-table-exists? dist-table obj))
+                (hash-table-set! dist-table obj 'seen)
+                (hash-table-set! dist-table obj (apply f args)))
           (make-dist (list #t #f)
-                     (list (variable id #t)
-                           (variable id #f))))))
+                     (list (variable obj #t)
+                           (variable obj #f))))))
 
-    (define (build-equations expr dist)
-      (map (lambda (v p) `(= ,(variable expr v) ,p))
+    ;; Computation of explicit probabilities given
+    ;; symbolic distribution and equations.
+    
+    (define (obj->equations obj dist)
+      (map (lambda (v p) `(= ,(variable obj v) ,p))
            (dist-vals dist)
            (dist-probs dist)))
 
     (define (dist-table->equations table)
       (hash-table-fold table
-                       (lambda (key val acc)
-                         (append (build-equations key val) acc))
+                       (lambda (obj dist equations)
+                         (append (obj->equations obj dist) equations))
                        '()))
 
-    (define (top obj)
-      (for-each pretty-print (dist-table->equations dist-table))
-      (pe "\nMarginal distribution:\n")
-      (if (dist? obj)
-          (pretty-print-dist obj)
-          (pretty-print obj)))
+    (define (dist-update dist bindings)
+      (let ([btable (alist->hash-table bindings eq?)])
+        (make-dist (dist-vals dist)
+                   (map (lambda (v p)
+                          (hash-table-ref btable p (lambda () 'missing)))
+                        (dist-vals dist)
+                        (dist-probs dist)))))
+
+    (define (dist-solve dist equations)
+      (let-values ([(solutions delta) (iterate/eqns equations 0.0 'start-value 0.0)])
+        (dist-update dist solutions)))
     
+    (define (top obj)
+      (pretty-print-dist
+       (dist-solve (distify obj)
+                   (dist-table->equations dist-table))))
+
     ;; Lifted apply
 
     (define (list-apply xs)
@@ -114,7 +133,7 @@
     (define (flip p)
       (make-dist '(#t #f)
                  (list p (s- 1 p))))    
-    
+
     ))
 
 
@@ -148,11 +167,10 @@
   (parameterize ([primitives (get-primitives e)])
                 (lift e)))
 
-(define (expr->equations expr)
-  (let* ([lifted-expr (lift/top (de-sugar-toplevel expr))]
-         [transformed-expr `(,@cosh-header
-                             (top ,(local lifted-expr)))])
-    (eval (local (begin-wrap transformed-expr))
+(define (cosh expr)
+  (let ([lifted-expr (lift/top (de-sugar-toplevel expr))])
+    (eval (local (begin-wrap `(,@cosh-header
+                               (top ,(local lifted-expr)))))
           cosh-env)))
 
 
@@ -162,9 +180,9 @@
 (define test-expr
   '(begin
      (define (foo)
-       (if (flip .5)
+       (if (flip .7)
            (not (foo))
            (flip .3)))
      (foo)))
 
-(expr->equations test-expr)
+(cosh test-expr)
