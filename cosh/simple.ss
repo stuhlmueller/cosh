@@ -12,21 +12,53 @@
 ;; Input language:
 ;; define | self-eval | primitive | lambda | if | (A B) | begin | letrec
 
-;; TODO:
-;; - implement lapply
-;; - implement cache that stores
-;;   - names for return values of each application (as soon as
-;;     application seen)
-;;   - equations that compute values for these names (as soon as
-;;     equations generated)
-
 (import (rnrs)
+        (cosh dist)
         (cosh desugar)
         (scheme-tools)
         (scheme-tools srfi-compat :1)
-        (except (transforms syntax) begin-wrap)
+        (transforms syntax)
         (transforms utils)
         (transforms common))
+
+
+;; --------------------------------------------------------------------
+;; Header
+
+(define header
+  '(
+    
+    ;; Lifted apply
+
+    (define (list-apply lst)
+      (apply (first lst) (rest lst)))
+    
+    (define (marginalize-application op args)
+      (let* ([factors (map distify (pair op args))]
+             [marginal (dist-product factors list-apply)])
+        (dist-collapse marginal)))    
+
+    (define (dist-apply op . args)
+      (if (not (any dist? (pair op args)))
+          (apply op args)
+          (marginalize-application op args)))
+    
+    ;; Lifted if
+
+    (define (dist-if test delayed-cons delayed-alt)
+      (if (not (dist? test))
+          (if test (delayed-cons) (delayed-alt))
+          (let ([cons-dist (distify (delayed-cons))]
+                [alt-dist (distify (delayed-alt))])
+            (dist-mix (list cons-dist alt-dist)
+                      (list (dist-prob test #t) (dist-prob test #f))))))
+    
+    ;; Random primitives
+    
+    (define (flip p)
+      (make-dist '(#t #f) (list p (s- 1 p))))
+
+    ))
 
 
 ;; --------------------------------------------------------------------
@@ -49,9 +81,9 @@
            ,(lift body)))]
      [('lambda args body) `(lambda ,args ,(lift body))]     
      [('define name body) `(define ,name ,(lift body))]     
-     [('if test cons alt) `(if ,(lift test) ,(lift cons) ,(lift alt))]
+     [('if test cons alt) `(dist-if ,(lift test) (lambda () ,(lift cons)) (lambda () ,(lift alt)))]
      [('begin . exprs) `(begin ,@(map lift exprs))]
-     [(op . args) `(lapply ,(lift op) ,@(map lift args))]
+     [(op . args) `(dist-apply ,(lift op) ,@(map lift args))]
      [else (error e "lift: cannot handle expression type")]))
   (handler e))
 
@@ -59,28 +91,26 @@
   (parameterize ([primitives (get-primitives e)])
                 (lift e)))
 
+(define (expr->equations expr)
+  (let ([transformed-expr (append header
+                                  (list (lift/top (de-sugar-toplevel expr))))])
+    ;; (pretty-print transformed-expr)
+    (eval `((lambda () ,(begin-wrap transformed-expr)))
+          (environment '(rnrs)
+                       '(cosh dist)
+                       '(scheme-tools)
+                       '(scheme-tools math symbolic)
+                       '(scheme-tools srfi-compat :1)
+                       '(scheme-tools hash)))))
+
 
 ;; --------------------------------------------------------------------
 ;; Test
 
-(define simple-header
-  '((define-record-type dist (fields vals probs))
-    (define (lapply op . args)
-      (apply op args))
-    (define (flip p)
-      (make-dist '(#t #f) (list p (- 1 p))))))
-
-(define (expr->equations expr)
-  (let ([transformed-expr (append simple-header
-                                  (list (lift/top (de-sugar-toplevel expr))))])
-    (pretty-print transformed-expr)
-    (eval `((lambda () ,(begin-wrap transformed-expr)))
-          (environment '(rnrs)))))
-
 (define test-expr
   '(begin
-     (define x (flip .5))
-     (define y (flip .5))
+     (define x (flip 'p1))
+     (define y (not (flip .3)))
      (or x y)))
 
-(pretty-print (expr->equations test-expr))
+(pretty-print-dist (expr->equations test-expr))
