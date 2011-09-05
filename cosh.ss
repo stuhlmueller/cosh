@@ -58,9 +58,6 @@
    (filter (lambda (e) (not (tagged-list? e 'import)))
            expr))
 
- (define (local expr)
-   `((lambda () ,expr)))
-
  (define (evaluate expr)
    (eval (local (begin-wrap (expr->body expr)))
          (expr->environment expr)))
