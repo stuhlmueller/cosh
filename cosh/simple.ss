@@ -30,18 +30,15 @@
     
     ;; Lifted apply
 
-    (define (list-apply lst)
-      (apply (first lst) (rest lst)))
+    (define (list-apply xs)
+      (apply (first xs) (rest xs)))
     
-    (define (marginalize-application op args)
-      (let* ([factors (map distify (pair op args))]
-             [marginal (dist-product factors list-apply)])
-        (dist-collapse marginal)))    
-
     (define (dist-apply op . args)
       (if (not (any dist? (pair op args)))
           (apply op args)
-          (marginalize-application op args)))
+          (let* ([factors (map distify (pair op args))]
+                 [marginal (dist-product factors list-apply)])
+            (dist-collapse marginal))))
     
     ;; Lifted if
 
