@@ -25,36 +25,96 @@
 ;; --------------------------------------------------------------------
 ;; Header
 
-(define header
+(define cosh-env
+  (environment '(rnrs)
+               '(cosh dist)
+               '(scheme-tools)
+               '(scheme-tools math symbolic)
+               '(scheme-tools srfi-compat :1)
+               '(scheme-tools hash)))
+
+(define cosh-header
   '(
+
+    (define id-table
+      (make-finitize-hash-table))
+
+    (define dist-table
+      (make-finitize-hash-table))    
+
+    (define make-id (get-counter))
+    
+    (define (cosh-id obj)
+      (hash-table-ref id-table
+                      obj
+                      (lambda ()
+                        (let ([id (make-id)])
+                          (hash-table-set! id-table obj id)
+                          id))))
+    
+    (define (variable app val)
+      (sym-append 'a (cosh-id app) 'v (cosh-id val)))        
+    
+    (define (cache type f)
+      (lambda args
+        (let ([id (cons type args)])
+          (when (not (hash-table-exists? dist-table id))
+                (hash-table-set! dist-table id 'seen)
+                (hash-table-set! dist-table id (apply f args)))
+          (make-dist (list #t #f)
+                     (list (variable id #t)
+                           (variable id #f))))))
+
+    (define (build-equations expr dist)
+      (map (lambda (v p) `(= ,(variable expr v) ,p))
+           (dist-vals dist)
+           (dist-probs dist)))
+
+    (define (dist-table->equations table)
+      (hash-table-fold table
+                       (lambda (key val acc)
+                         (append (build-equations key val) acc))
+                       '()))
+
+    (define (top obj)
+      (for-each pretty-print (dist-table->equations dist-table))
+      (pe "\nMarginal distribution:\n")
+      (if (dist? obj)
+          (pretty-print-dist obj)
+          (pretty-print obj)))
     
     ;; Lifted apply
 
     (define (list-apply xs)
       (apply (first xs) (rest xs)))
     
-    (define (dist-apply op . args)
-      (if (not (any dist? (pair op args)))
-          (apply op args)
-          (let* ([factors (map distify (pair op args))]
-                 [marginal (dist-product factors list-apply)])
-            (dist-collapse marginal))))
+    (define dist-apply
+      (cache 'app
+             (lambda (op . args)
+               (if (not (any dist? (pair op args)))
+                   (apply op args)
+                   (let* ([factors (map distify (pair op args))]
+                          [marginal (dist-product factors list-apply)])
+                     (dist-collapse marginal))))))
     
     ;; Lifted if
 
-    (define (dist-if test delayed-cons delayed-alt)
-      (if (not (dist? test))
-          (if test (delayed-cons) (delayed-alt))
-          (let ([cons-dist (distify (delayed-cons))]
-                [alt-dist (distify (delayed-alt))])
-            (dist-mix (list cons-dist alt-dist)
-                      (list (dist-prob test #t) (dist-prob test #f))))))
+    (define dist-if
+      (cache 'if
+             (lambda (test delayed-cons delayed-alt)
+               (if (not (dist? test))
+                   (if test (delayed-cons) (delayed-alt))
+                   (let ([cons-dist (distify (delayed-cons))]
+                         [alt-dist (distify (delayed-alt))])
+                     (dist-mix (list cons-dist alt-dist)
+                               (list (dist-prob test #t) (dist-prob test #f))))))))
     
     ;; Random primitives
     
     (define (flip p)
-      (make-dist '(#t #f) (list p (s- 1 p))))
-
+      (make-dist '(#t #f)
+                 (list p (s- 1 p))))    
+    
     ))
 
 
@@ -89,16 +149,11 @@
                 (lift e)))
 
 (define (expr->equations expr)
-  (let ([transformed-expr (append header
-                                  (list (lift/top (de-sugar-toplevel expr))))])
-    ;; (pretty-print transformed-expr)
-    (eval `((lambda () ,(begin-wrap transformed-expr)))
-          (environment '(rnrs)
-                       '(cosh dist)
-                       '(scheme-tools)
-                       '(scheme-tools math symbolic)
-                       '(scheme-tools srfi-compat :1)
-                       '(scheme-tools hash)))))
+  (let* ([lifted-expr (lift/top (de-sugar-toplevel expr))]
+         [transformed-expr `(,@cosh-header
+                             (top ,(local lifted-expr)))])
+    (eval (local (begin-wrap transformed-expr))
+          cosh-env)))
 
 
 ;; --------------------------------------------------------------------
@@ -106,8 +161,10 @@
 
 (define test-expr
   '(begin
-     (define x (flip 'p1))
-     (define y (not (flip .3)))
-     (or x y)))
+     (define (foo)
+       (if (flip .5)
+           (not (foo))
+           (flip .3)))
+     (foo)))
 
-(pretty-print-dist (expr->equations test-expr))
+(expr->equations test-expr)
