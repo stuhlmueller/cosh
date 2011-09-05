@@ -42,6 +42,7 @@
          (scheme-tools macros)
          (scheme-tools math)
          (scheme-tools srfi-compat :1)
+         (transforms syntax)
          (xitomatl keywords))
 
  (define (header->reserved-words header)
