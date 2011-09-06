@@ -8,7 +8,7 @@
 ;; We lift our program to operate on symbolic distributions and to
 ;; return a list of equations. Applications marginalize over operator
 ;; and argument distributions. Using memoization, we compute the
-;; equations corresponding to any particular equation only once.
+;; equations corresponding to any particular application only once.
 
 ;; Input language:
 ;; define | self-eval | primitive | lambda | if | (A B) | begin | letrec
