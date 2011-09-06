@@ -9,8 +9,6 @@
  (export de-sugar
          de-sugar-all
          de-sugar-toplevel
-         begin-wrap
-         partition-begin
          register-sugar!
          register-query-sugar)
 

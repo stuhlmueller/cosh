@@ -42,6 +42,7 @@
          (scheme-tools macros)
          (scheme-tools math)
          (scheme-tools srfi-compat :1)
+         (transforms syntax)
          (xitomatl keywords))
 
  (define (header->reserved-words header)
@@ -56,9 +57,6 @@
  (define (expr->body expr)
    (filter (lambda (e) (not (tagged-list? e 'import)))
            expr))
-
- (define (local expr)
-   `((lambda () ,expr)))
 
  (define (evaluate expr)
    (eval (local (begin-wrap (expr->body expr)))
