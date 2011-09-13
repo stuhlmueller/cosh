@@ -33,7 +33,8 @@
                '(scheme-tools math symbolic)
                '(scheme-tools math iterate)
                '(scheme-tools srfi-compat :1)
-               '(scheme-tools hash)))
+               '(scheme-tools hash)
+               '(srfi :41)))
 
 (define cosh-header
   '(
@@ -67,10 +68,9 @@
           (when (not (hash-table-exists? dist-table obj))
                 (hash-table-set! dist-table obj 'seen)
                 (hash-table-set! dist-table obj (apply f args)))
-          (make-dist (list #t #f)
-                     (list (variable obj #t)
-                           (variable obj #f))))))
-
+          (make-dist (list (cons #t (variable obj #t))
+                           (cons #f (variable obj #f)))))))
+    
     ;; Computation of explicit probabilities given
     ;; symbolic distribution and equations.
     
@@ -87,9 +87,8 @@
 
     (define (dist-update dist bindings)
       (let ([btable (alist->hash-table bindings eq?)])
-        (make-dist (dist-vals dist)
-                   (map (lambda (v p)
-                          (hash-table-ref btable p (lambda () 'missing)))
+        (make-dist (map (lambda (v p)
+                          (cons v (hash-table-ref btable p (lambda () 'missing))))
                         (dist-vals dist)
                         (dist-probs dist)))))
 
@@ -131,9 +130,9 @@
     ;; Random primitives
     
     (define (flip p)
-      (make-dist '(#t #f)
-                 (list p (s- 1 p))))    
-
+      (make-dist (list (pair #t p)
+                       (pair #f (s- 1 p)))))
+    
     ))
 
 

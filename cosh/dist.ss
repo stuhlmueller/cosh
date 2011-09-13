@@ -6,12 +6,11 @@
 
  (cosh dist)
 
- (export alist->dist
-         dist?
-         dist->alist
+ (export dist?
          dist->entries
          dist-collapse
          dist-mix
+         dist-elements
          dist-prob
          dist-probs
          dist-product
@@ -30,13 +29,20 @@
          (scheme-tools)
          (scheme-tools hash)
          (scheme-tools math symbolic)
-         (scheme-tools srfi-compat :1))
+         (scheme-tools srfi-compat :1)
+         (srfi :41))
 
  (define-record-type dist
-   (fields vals probs))
+   (fields elements))
+
+ (define (dist-vals d)
+   (map first (dist-elements d)))
+
+ (define (dist-probs d)
+   (map rest (dist-elements d)))
 
  (define (dist-prob d v)
-   (let ([dp (assoc v (dist->alist d))])
+   (let ([dp (assoc v (dist-elements d))])
      (if dp (rest dp) 0.0)))
 
  (define entry->val first)
@@ -48,17 +54,9 @@
         (dist-probs d)))    
 
  (define (entries->dist entries)
-   (make-dist (map first entries)
-              (map second entries)))
-
- (define (dist->alist d)
-   (map pair
-        (dist-vals d)
-        (dist-probs d)))
-
- (define (alist->dist alist)
-   (make-dist (map first alist)
-              (map rest alist)))
+   (make-dist (map cons
+                   (map first entries)
+                   (map second entries))))
 
  (define (pretty-print-dist d)
    (for-each (lambda (v p)
@@ -67,8 +65,7 @@
              (dist-probs d)))
 
  (define (singleton-dist val)
-   (make-dist (list val)
-              (list 1.0)))
+   (make-dist (list (cons val 1.0))))
 
  (define (distify val)
    (if (dist? val)
@@ -76,7 +73,7 @@
        (singleton-dist val)))
 
  (define (dist-product dists f)
-   (alist->dist
+   (make-dist
     (map (lambda (entries)
            (pair (f (map entry->val entries))
                  (apply s* (map entry->prob entries))))
@@ -91,13 +88,13 @@
                                     (if p0 (s+ p0 p) p))))
                (dist-vals d)
                (dist-probs d))
-     (alist->dist (hash-table->alist table))))
+     (make-dist (hash-table->alist table))))
 
  (define (dist-sum dists)
    (dist-collapse (entries->dist (apply append (map dist->entries dists)))))
 
  (define (dist-scale d s)
-   (alist->dist
+   (make-dist
     (map (lambda (v p) (pair v (s* s p)))
          (dist-vals d)
          (dist-probs d))))
