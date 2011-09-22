@@ -14,7 +14,7 @@
 ;; define | self-eval | primitive | lambda | if | (A B) | begin | letrec
 
 (import (rnrs)
-        (cosh dist)
+        (cosh simple dist)
         (cosh desugar)
         (scheme-tools)
         (scheme-tools srfi-compat :1)
@@ -28,7 +28,7 @@
 
 (define cosh-env
   (environment '(rnrs)
-               '(cosh dist)
+               '(cosh simple dist)
                '(scheme-tools)
                '(scheme-tools math symbolic)
                '(scheme-tools math iterate)

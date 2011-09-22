@@ -4,7 +4,7 @@
 
 (library
 
- (cosh dist)
+ (cosh simple dist)
 
  (export alist->dist
          dist?
