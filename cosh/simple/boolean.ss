@@ -14,7 +14,7 @@
 ;; define | self-eval | primitive | lambda | if | (A B) | begin | letrec
 
 (import (rnrs)
-        (cosh dist)
+        (cosh simple dist)
         (cosh desugar)
         (scheme-tools)
         (scheme-tools srfi-compat :1)
@@ -36,7 +36,7 @@
                '(scheme-tools hash)
                '(srfi :41)))
 
-(define cosh-header
+ (define cosh-header
   '(
 
     ;; Variable names
@@ -64,12 +64,34 @@
     
     (define (cache type f)
       (lambda args
-        (let ([obj (cons type args)])
+        (let* ([obj (cons type args)]
+               [dist (hash-table-ref dist-table
+                                  obj
+                                  (lambda ()
+                                    (begin
+                                      (hash-table-set! dist-table obj 'seen)
+
+                                      ;; at the point where we call (apply f args), the
+                                      ;; hash table entry should already be set to
+                                      ;; the stream of its return values, since the application
+                                      ;; might need some of its return values to compute others.
+                                      ;; furthermore, it might be the case that trying to use the
+                                      ;; first stream return object might
+
+                                      ;; if the HT value is seen, then we recursed
+                                      ;; to the same application. in this case, we should skip the
+                                      ;; first stream element, append it to the end of the stream, and return the new distribution
+                                      (let ([d (apply f args)])
+                                        (hash-table-set! dist-table obj d)
+                                        
           (when (not (hash-table-exists? dist-table obj))
                 (hash-table-set! dist-table obj 'seen)
-                (hash-table-set! dist-table obj (apply f args)))
-          (make-dist (list (cons #t (variable obj #t))
-                           (cons #f (variable obj #f)))))))
+                (hash-table-set! dist-table obj
+                                 (apply f args) ;; this returns a stream dist
+                                 )) 
+
+          (stream-map (lambda (v) (cons v (variable obj v)))
+                      (dist-elements dist)))))
     
     ;; Computation of explicit probabilities given
     ;; symbolic distribution and equations.
