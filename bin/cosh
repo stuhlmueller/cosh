@@ -22,6 +22,13 @@ def call(cmd, verbose=False, allow_fail=False):
     else:
         return status
 
+def parse_params(params):
+    if params == "":
+        return [(None, None)]
+    else:
+        key, vals = params.split(":")
+        return [(key, val) for val in vals.split(",")]
+
 def val_string(obj):
     if type(obj) == str and obj.isdigit():
         return int(obj)
@@ -53,9 +60,11 @@ def get_scheme_command():
 @optfunc.arghelp('verbose', 'display all executed commands')
 @optfunc.arghelp('debug', 'run all scheme commands in debug mode')
 @optfunc.arghelp('time', 'record runtime')
+@optfunc.arghelp('set', 'run church file with multiple parameter settings')
 @optfunc.arghelp('keep', 'do not delete compiled file')
-def main(file, limit="", verbose=False, debug=False, time=False, keep=False):
+def main(file, limit="", verbose=False, debug=False, time=False, keep=False, set=""):
     """Usage: %prog <file> [options]"""
+    params = parse_params(set)    
     in_path = abspath(file)
     cosh_path = abspath(dirname(sys.argv[0]))
     settings = {
@@ -69,34 +78,40 @@ def main(file, limit="", verbose=False, debug=False, time=False, keep=False):
     if not scheme_command:
         print "Could not find vicare or ikarus!"
         exit()
-    
-    vprint("Generating scheme code ...", verbose)
-    code = open(in_path).read()
 
-    params = {
-        "limit" : limit,
-        "verbosity" : verbose
-        }
+    for (i, (param_key, param_value)) in enumerate(params):
+        
+        vprint("Generating scheme code ...", verbose)
+        code = open(in_path).read()
 
-    template = open(os.path.join(cosh_path, "cosh.tpl")).read()
-    generated = template % { "code" : code,
-                             "cosh-params" : param_string(params),
-                             "verbose" : val_string(verbose)}
-    f = open(settings["out_path"], "w")
-    f.write(generated)
-    f.close()
-
-    vprint("Running generated scheme in %s ...\n" % scheme_command, verbose)
-    pre = datetime.now()
-    call("%(scheme_bin)s %(debug)s --r6rs-script '%(out_path)s'\n" % settings, verbose)
-    post = datetime.now()    
-
-    if time:
-        delta = post-pre
-        seconds = delta.seconds + delta.microseconds/1000000.0
-        print("Runtime: %fs" % seconds)
-
-    if not keep:
-        vprint("Removing compiled file ...", verbose)
-        call("rm -f '%(out_path)s'" % settings, verbose)        
+        if param_key:
+            vprint("* %s: %s" % (param_key, param_value), True)
+            code = code % { param_key : param_value }
+        
+        params = {
+            "limit" : limit,
+            "verbosity" : verbose
+            }
+        
+        template = open(os.path.join(cosh_path, "cosh.tpl")).read()
+        generated = template % { "code" : code,
+                                 "cosh-params" : param_string(params),
+                                 "verbose" : val_string(verbose)}
+        f = open(settings["out_path"], "w")
+        f.write(generated)
+        f.close()
+        
+        vprint("Running generated scheme in %s ...\n" % scheme_command, verbose)
+        pre = datetime.now()
+        call("%(scheme_bin)s %(debug)s --r6rs-script '%(out_path)s'\n" % settings, verbose)
+        post = datetime.now()    
+        
+        if time:
+            delta = post-pre
+            seconds = delta.seconds + delta.microseconds/1000000.0
+            print("Runtime: %fs" % seconds)
+        
+        if not keep:
+            vprint("Removing compiled file ...", verbose)
+            call("rm -f '%(out_path)s'" % settings, verbose)        
     
