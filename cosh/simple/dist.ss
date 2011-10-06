@@ -18,13 +18,17 @@
          dist-scale
          dist-sum
          dist-vals
+         null-dist?
+         null-dist
+         dist-mass
          distify
          entries->dist
          entry->prob
          entry->val
          make-dist
          pretty-print-dist
-         singleton-dist)
+         singleton-dist
+         dist-hash-table-maker)
 
  (import (rnrs)
          (scheme-tools)
@@ -32,8 +36,18 @@
          (scheme-tools math symbolic)
          (scheme-tools srfi-compat :1))
 
- (define-record-type dist
-   (fields vals probs))
+ (define dist-hash-table-maker
+   (make-parameter make-equal-hash-table))
+ 
+ (define (make-dist vals probs)
+   (list 'dist vals probs))
+
+ (define dist-vals second)
+
+ (define dist-probs third)
+
+ (define (dist? obj)
+   (tagged-list? obj 'dist))
 
  (define (dist-prob d v)
    (let ([dp (assoc v (dist->alist d))])
@@ -82,8 +96,8 @@
                  (apply s* (map entry->prob entries))))
          (all-combinations (map dist->entries dists)))))
 
- (define (dist-collapse d)
-   (let ([table (make-equal-hash-table)])
+ (define/kw (dist-collapse d)
+   (let ([table ((dist-hash-table-maker))])
      (for-each (lambda (v p)
                  (let ([p0 (hash-table-ref/default table v #f)])                
                    (hash-table-set! table
@@ -105,5 +119,13 @@
  (define (dist-mix dists probs)
    (let ([normalized-dists (map dist-scale dists probs)])
      (dist-sum normalized-dists)))
+
+ (define (dist-mass dist)
+   (sum (dist-probs dist)))
+
+ (define null-dist (make-dist '() '()))
+
+ (define (null-dist? d)
+   (null? (dist-vals d)))
 
  )
