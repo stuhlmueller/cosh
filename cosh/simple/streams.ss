@@ -51,20 +51,6 @@
     (define (stream-map* proc streams)
       (apply stream-map
              (cons proc streams)))
-    
-    (define (stream-merge policy strms)
-      (define stream-merge
-        (stream-lambda
-         (strms)
-         (cond [(stream-null? strms) stream-null]
-               [(not (stream? (stream-car strms)))
-                (error 'stream-merge "non-stream object in input stream")]
-               [(stream-null? (stream-car strms))
-                (stream-merge (stream-cdr strms))]
-               [else (policy strms)])))
-      (if (not (stream? strms))
-          (error 'stream-merge "non-stream argument")
-          (stream-merge strms)))
 
     (define (stream-eager? strm)
       (assert (stream? strm))
@@ -161,12 +147,12 @@
         (if (null? streams)
             (stream null-dist)
             (stream-map* (lambda dists (dist-mix dists probs))
-                         streams))))    
+                         streams))))
 
     (define (stream-apply . maybe-strms)
       (let* ([streams (map streamify maybe-strms)])
         (stream-concat (stream-map* dist-apply-to-stream streams))))
-    
+
     (define (dist-if test-dist cons-dist alt-dist)
       (dist-mix (list cons-dist alt-dist)
                 (list (dist-prob test-dist #t)
