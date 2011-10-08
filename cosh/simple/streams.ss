@@ -162,8 +162,9 @@
     (define (converged? dist)
       (= (dist-mass dist) 1.0))
 
-    ;; FIXME: this must be wrong somehow, since some tests don't
-    ;; accumulate all the probability mass they need
+    ;; FIXME: This is incorrect--if inputs-converged and
+    ;; outputs-converged is #f, this never gets beyond the first
+    ;; element in the local output streams!
     (define (stream-apply . maybe-strms)
       (let* ([input-streams (map streamify maybe-strms)]
              [local-steps 0]
