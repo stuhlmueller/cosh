@@ -146,55 +146,20 @@
 
     (define memoized-list-apply-to-stream
       (stream-mem list-apply-to-stream null-dist))
-    
-    ;; --------------------------------------------------------------------
-    ;; stream apply v3
-    ;;
-    ;; The choice we have to make here is between pulling on the input
-    ;; streams and pulling on the return stream. If the input streams
-    ;; are converged, then we only want to pull on the return stream;
-    ;; if the return stream is (locally!) converged, we want to pull
-    ;; on the input stream and then pull on the return stream again.
-    ;; If both input stream and return stream are converged, we switch
-    ;; to the constant return stream. If neither of them is converged
-    ;; we follow something like the "diagonal" policy.
-    
-    (define (converged? dist)
-      (= (dist-mass dist) 1.0))
 
-    ;; FIXME: this must be wrong somehow, since some tests don't
-    ;; accumulate all the probability mass they need
+    (define (dist-apply-to-stream . dists)
+      (assert (all dist? dists))
+      (let* ([combos (all-combinations (map dist->entries dists))]
+             [streams (map (lambda (combo) (memoized-list-apply-to-stream (map entry->val combo))) combos)]
+             [probs (map (lambda (combo) (apply s* (map entry->prob combo))) combos)])
+        (if (null? streams)
+            (stream null-dist)
+            (stream-map* (lambda dists (dist-mix dists probs))
+                         streams))))    
+
     (define (stream-apply . maybe-strms)
-      (let* ([input-streams (map streamify maybe-strms)]
-             [local-steps 0]
-             [max-steps 30])
-        (define-stream (this-stream-apply input-streams)
-          (let* ([input-dists (map stream-car input-streams)]
-                 [combos (all-combinations (map dist->entries input-dists))])
-            (if (null? combos)
-                (stream-cons null-dist
-                             (this-stream-apply (map stream-cdr input-streams)))
-                (let* ([combo-streams (map (lambda (combo) (memoized-list-apply-to-stream (map entry->val combo))) combos)]
-                       [combo-weights (map (lambda (combo) (apply s* (map entry->prob combo))) combos)]
-                       [combo-dists (map stream-car combo-streams)]
-                       [local-output-stream (stream-map* (lambda combo-dists (dist-mix combo-dists combo-weights))
-                                                         combo-streams)]
-                       [output-dist (stream-car local-output-stream)])
-                  (stream-cons
-                   output-dist
-                   (let ([inputs-converged (all converged? input-dists)]
-                         [outputs-converged (all converged? combo-dists)])
-                     (cond [(and inputs-converged outputs-converged) (stream-constant output-dist)]
-                           [inputs-converged (stream-cdr local-output-stream)]
-                           [outputs-converged (this-stream-apply (map stream-cdr input-streams))]
-                           [else (if (= local-steps max-steps)
-                                     (begin
-                                       (set! local-steps 0)
-                                       (this-stream-apply (map stream-cdr input-streams)))
-                                     (begin
-                                       (set! local-steps (+ local-steps 1))
-                                       (this-stream-apply input-streams)))])))))))
-        (this-stream-apply input-streams)))
+      (let* ([streams (map streamify maybe-strms)])
+        (stream-concat (stream-map* dist-apply-to-stream streams))))
     
     (define (dist-if test-dist cons-dist alt-dist)
       (dist-mix (list cons-dist alt-dist)
