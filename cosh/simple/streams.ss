@@ -45,42 +45,17 @@
     (define (stream-map* proc streams)
       (apply stream-map
              (cons proc streams)))
-
-    (define-stream (concat-policy strms)
-      (stream-cons
-       (stream-car (stream-car strms))
-       (stream-merge concat-policy
-                     (stream-cons (stream-cdr (stream-car strms)) (stream-cdr strms)))))
-
-    (define (make-linear-policy)
-      (let ([level 1]
-            [step 0])
-        (define (this-linear-policy strms)
-          (if (= step level)
-              (begin
-                (set! level (+ level 1))
-                (set! step 0)
-                (stream-merge this-linear-policy
-                              (stream-cdr strms)))
-              (begin
-                (set! step (+ step 1))
-                (stream-cons
-                 (stream-car (stream-car strms))
-                 (stream-merge this-linear-policy
-                               (stream-cons (stream-cdr (stream-car strms))
-                                            (stream-cdr strms)))))))
-        this-linear-policy))
     
     (define (stream-merge policy strms)
       (define stream-merge
         (stream-lambda
          (strms)
-         (cond ((stream-null? strms) stream-null)
-               ((not (stream? (stream-car strms)))
-                (error 'stream-merge "non-stream object in input stream"))
-               ((stream-null? (stream-car strms))
-                (stream-merge (stream-cdr strms)))
-               (else (policy strms)))))
+         (cond [(stream-null? strms) stream-null]
+               [(not (stream? (stream-car strms)))
+                (error 'stream-merge "non-stream object in input stream")]
+               [(stream-null? (stream-car strms))
+                (stream-merge (stream-cdr strms))]
+               [else (policy strms)])))
       (if (not (stream? strms))
           (error 'stream-merge "non-stream argument")
           (stream-merge strms)))
@@ -99,16 +74,17 @@
       (assert (stream-eager? strm))
       (let* ([box-accessor (record-accessor (record-rtd strm) 0)]
              [strm-pare (cdr (box-accessor strm))]
-             [kdr-accessor (record-accessor (record-rtd strm-pare) 1)]
-             [kdr-strm (kdr-accessor strm-pare)])
-        (assert (stream? kdr-strm))
-        kdr-strm))
+             [obj-accessor (record-accessor (record-rtd strm-pare) accessor-index)]
+             [obj (obj-accessor strm-pare)])
+        obj))
 
     (define (stream-kar strm)
       (stream-access strm 0))
 
     (define (stream-kdr strm)
-      (stream-access strm 1))
+      (let ([strm (stream-access strm 1)])
+        (assert (stream? strm))
+        strm))
 
     (define (stream-fast-forward strm)
       (define-stream (fast-forward strm prev)
@@ -155,31 +131,72 @@
          (make-dist (list #t #f)
                     (list p (- 1 p))))))
 
+    (define (geometric . args)
+      (let ([p (if (null? args) .5 (car args))])
+        (stream-map (lambda (n)
+                      (make-dist (iota n)
+                                 (map (lambda (i) (expt p (+ i 1))) (iota n))))
+                    (stream-from 0))))
+
     ;; Distribution stream apply & if
 
-    (define/debug (list-apply-to-stream xs)
+    (define (list-apply-to-stream xs)
       (for-each (lambda (v) (assert (not (stream? v)))) xs)
       (streamify (apply (first xs) (rest xs))))
 
     (define memoized-list-apply-to-stream
       (stream-mem list-apply-to-stream null-dist))
+    
+    ;; --------------------------------------------------------------------
+    ;; stream apply v3
+    ;;
+    ;; The choice we have to make here is between pulling on the input
+    ;; streams and pulling on the return stream. If the input streams
+    ;; are converged, then we only want to pull on the return stream;
+    ;; if the return stream is (locally!) converged, we want to pull
+    ;; on the input stream and then pull on the return stream again.
+    ;; If both input stream and return stream are converged, we switch
+    ;; to the constant return stream. If neither of them is converged
+    ;; we follow something like the "diagonal" policy.
+    
+    (define (converged? dist)
+      (= (dist-mass dist) 1.0))
 
-    (define/debug (dist-apply-to-stream . dists)
-      (assert (all dist? dists))
-      (let* ([combos (all-combinations (map dist->entries dists))]
-             [streams (map (lambda (combo) (memoized-list-apply-to-stream (map entry->val combo))) combos)]
-             [probs (map (lambda (combo) (apply s* (map entry->prob combo))) combos)])
-        (if (null? streams)
-            (stream null-dist)
-            (stream-map* (lambda dists (dist-mix dists probs))
-                         streams))))
-
-    (define/debug (stream-apply . maybe-strms)
-      (let ([streams (map streamify maybe-strms)])
-        (stream-merge (make-linear-policy)
-                      (stream-map* dist-apply-to-stream streams))))
-
-    (define/debug (dist-if test-dist cons-dist alt-dist)
+    ;; FIXME: this must be wrong somehow, since some tests don't
+    ;; accumulate all the probability mass they need
+    (define (stream-apply . maybe-strms)
+      (let* ([input-streams (map streamify maybe-strms)]
+             [local-steps 0]
+             [max-steps 30])
+        (define-stream (this-stream-apply input-streams)
+          (let* ([input-dists (map stream-car input-streams)]
+                 [combos (all-combinations (map dist->entries input-dists))])
+            (if (null? combos)
+                (stream-cons null-dist
+                             (this-stream-apply (map stream-cdr input-streams)))
+                (let* ([combo-streams (map (lambda (combo) (memoized-list-apply-to-stream (map entry->val combo))) combos)]
+                       [combo-weights (map (lambda (combo) (apply s* (map entry->prob combo))) combos)]
+                       [combo-dists (map stream-car combo-streams)]
+                       [local-output-stream (stream-map* (lambda combo-dists (dist-mix combo-dists combo-weights))
+                                                         combo-streams)]
+                       [output-dist (stream-car local-output-stream)])
+                  (stream-cons
+                   output-dist
+                   (let ([inputs-converged (all converged? input-dists)]
+                         [outputs-converged (all converged? combo-dists)])
+                     (cond [(and inputs-converged outputs-converged) (stream-constant output-dist)]
+                           [inputs-converged (stream-cdr local-output-stream)]
+                           [outputs-converged (this-stream-apply (map stream-cdr input-streams))]
+                           [else (if (= local-steps max-steps)
+                                     (begin
+                                       (set! local-steps 0)
+                                       (this-stream-apply (map stream-cdr input-streams)))
+                                     (begin
+                                       (set! local-steps (+ local-steps 1))
+                                       (this-stream-apply input-streams)))])))))))
+        (this-stream-apply input-streams)))
+    
+    (define (dist-if test-dist cons-dist alt-dist)
       (dist-mix (list cons-dist alt-dist)
                 (list (dist-prob test-dist #t)
                       (dist-prob test-dist #f))))
@@ -215,7 +232,7 @@
           (error 'merge-if-streams "non-stream argument")
           (merge-if test-strm cons-strm alt-strm)))
 
-    (define/debug (stream-if test delayed-cons delayed-alt)
+    (define (stream-if test delayed-cons delayed-alt)
       (if (not (stream? test))
           (streamify (if test (delayed-cons) (delayed-alt)))
           (let ([test-strm test]
@@ -230,9 +247,12 @@
                     (let* ([strm (streamify maybe-strm)]
                            [lst (stream->list ,depth strm)])
                       (when (debug-mode)
-                            (pe "\n")
-                            (for-each pretty-print lst)
-                            (show-stream-cache-size))
+                            (pe "\n\n")
+                            (for-each ppe lst)
+                            (pe "\nfirst non-null dist after: "
+                                (list-index (lambda (dist) (not (null? (dist-vals dist))))
+                                            lst))
+                                (show-stream-cache-size))
                       (stream-ref strm ,depth))))
 
     ))
@@ -535,13 +555,13 @@
   (begin
     (define (foo)
       (cons (flip .2)
-            (if (flip .5)
+            (if (flip .1)
                 (foo)
                 '())))
     (car (foo)))
   (make-dist '(#t #f) '(.2 .8))
-  3000
-  0.05)
+  50
+  0.02)
 
 (define-test if-mixture
   (begin
@@ -625,6 +645,15 @@
   (make-dist '((#t #t) (#t #f) (#f #t))
              (list 1/3 1/3 1/3)))
 
+(define-test nested-applications
+  (begin
+    (define (foo n)
+      (if (= n 0)
+          #t
+          (foo (- n 1))))
+    (foo 3))
+  (make-dist '(#t) '(1.0)))
+
 (define-test forcing-from-above-let
   (letrec ((drq (lambda (nfqp)
                   ((let ([val (nfqp)])
@@ -664,10 +693,17 @@
   3000
   0.05)
 
+(define-test bayes-net
+  (let* ([A (flip)]
+         [B (flip (if A .1 .3))]
+         [C (flip (if A .2 .7))]
+         [D (flip (if (and B C) .3 (if (or B C) .4 .5)))])
+    D)
+  (make-dist '(#t #f) '(.435 .565)))
 
 ;; --------------------------------------------------------------------
 ;; Main
 
 (run-tests)
 
-;; (pe (debug-test forcing-from-above-let 'depth 5000 'verbose #f))
+;; (pe (debug-test bayes-net 'depth 30 'verbose #t))
