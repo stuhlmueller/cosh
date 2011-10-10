@@ -61,8 +61,8 @@
            [else
             (begin (pe "passed.\n") true)]))))
 
-(define (run-tests)
-  (let ([results (map run-test tests)])
+(define (run-tests . t)
+  (let ([results (map run-test (if (null? t) tests (car t)))])
     (pe "\npassed " (length (filter (lambda (x) x) results)) " out of " (length results) " tests.\n")))
 
 (define/kw (debug-test test [depth :default 10] [verbose :default #t])
@@ -371,8 +371,54 @@
 
 
 ;; --------------------------------------------------------------------
+;; Test categories
+
+(define nonrecursive-tests
+  (list raw-primitive
+        raw-number
+        raw-symbol
+        raw-letrec
+        raw-if
+        raw-begin
+        raw-application
+        lambda-variables
+        let-variables
+        letrec-variables
+        begin-define-variables
+        no-recursion
+        stochastic-arg
+        stochastic-args
+        not-true
+        not-true-nested
+        if-safety
+        nested-applications
+        bayes-net))
+
+(define recursive-finite-tests
+  (list nontail-recursion
+        nontail-if-predicate
+        if-mixture
+        desugared-rejection
+        desugared-rejection-2
+        trivial-rejection
+        simple-rejection
+        forcing-from-above-let
+        forcing-from-above))
+
+(define recursive-infinite-tests
+  (list nontail-list-recursion
+        high-orders))
+
+
+;; --------------------------------------------------------------------
 ;; Main
 
-(run-tests)
+(run-tests nonrecursive-tests)
 
-;; (pe (debug-test bayes-net 'depth 30 'verbose #t))
+;; (define-test symbolic-test
+;;   (let* ([A (flip 'x)]
+;;          [B (flip 'y)])
+;;     (or A B))
+;;   (make-dist '(#t #f) '(unknown)))
+
+;; (pe (debug-test symbolic-test 'depth 5 'verbose #t))
