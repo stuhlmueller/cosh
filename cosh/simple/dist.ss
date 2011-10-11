@@ -6,14 +6,15 @@
 
  (cosh simple dist)
 
- (export alist->dist
-         dist?
+ (export dist?
          dist->alist
          dist->entries
          dist-collapse
          dist-mix
          dist-prob
          dist-probs
+         dist-prob-defs
+         dist-prob-vars
          dist-product
          dist-scale
          dist-sum
@@ -39,46 +40,74 @@
  (define dist-hash-table-maker
    (make-parameter make-equal-hash-table))
  
- (define (make-dist vals probs)
-   (list 'dist vals probs))
+ (define (make-dist vals prob-defs . prob-vars)
+   (if (null? prob-vars)
+       (list 'dist vals prob-defs #f)
+       (list 'dist vals prob-defs (car prob-vars))))
 
  (define dist-vals second)
+ (define dist-prob-defs third)
+ (define dist-prob-vars fourth)
 
- (define dist-probs third)
+ (define (dist-probs dist)
+   (let ([vars (dist-prob-vars dist)])
+     (if vars
+         vars
+         (dist-prob-defs dist))))
 
  (define (dist? obj)
-   (tagged-list? obj 'dist))
-
+   (and (tagged-list? obj 'dist)
+        (or (= (length obj) 3)
+            (= (length obj) 4))))
+ 
  (define (dist-prob d v)
    (let ([dp (assoc v (dist->alist d))])
      (if dp (rest dp) 0.0)))
 
+ 
  (define entry->val first)
-
- (define entry->prob second)
+ (define entry->prob-def second)
+ (define entry->prob-var third)
+ (define (entry->prob entry)
+   (if (= (length entry) 3)
+       (entry->prob-var entry)
+       (entry->prob-def entry)))
 
  (define (dist->entries d)
-   (zip (dist-vals d)
-        (dist-probs d)))    
-
+   (assert (dist? d))
+   (let ([prob-vars (dist-prob-vars d)])
+     (if prob-vars
+         (zip (dist-vals d)
+              (dist-prob-defs d)
+              prob-vars)
+         (zip (dist-vals d)
+              (dist-prob-defs d)))))         
+         
  (define (entries->dist entries)
-   (make-dist (map first entries)
-              (map second entries)))
+   (cond [(null? entries) (make-dist '() '())]
+         [(all (lambda (e) (= (length e) 3)) entries)
+          (make-dist (map first entries)
+                     (map second entries)
+                     (map third entries))]
+         [else (make-dist (map first entries)
+                          (map second entries))]))
 
  (define (dist->alist d)
    (map pair
         (dist-vals d)
         (dist-probs d)))
 
- (define (alist->dist alist)
-   (make-dist (map first alist)
-              (map rest alist)))
-
  (define (pretty-print-dist d)
-   (for-each (lambda (v p)
-               (pe v ": " p "\n"))
-             (dist-vals d)
-             (dist-probs d)))
+   (if (dist-prob-vars d)
+       (for-each (lambda (v s p)
+                   (pe v ": " s " -- " p "\n"))
+                 (dist-vals d)
+                 (dist-prob-vars d)
+                 (dist-prob-defs d))
+       (for-each (lambda (v p)
+                   (pe "p(" v ") = " p "\n"))
+                 (dist-vals d)
+                 (dist-prob-defs d))))
 
  (define (singleton-dist val)
    (make-dist (list val)
@@ -90,12 +119,16 @@
        (singleton-dist val)))
 
  (define (dist-product dists f)
-   (alist->dist
+   (entries->dist
     (map (lambda (entries)
-           (pair (f (map entry->val entries))
+           (list (f (map entry->val entries))
                  (apply s* (map entry->prob entries))))
          (all-combinations (map dist->entries dists)))))
 
+ (define (alist->entries lst)
+   (map (lambda (kv) (list (car kv) (cdr kv)))
+        lst))
+ 
  (define/kw (dist-collapse d)
    (let ([table ((dist-hash-table-maker))])
      (for-each (lambda (v p)
@@ -105,14 +138,14 @@
                                     (if p0 (s+ p0 p) p))))
                (dist-vals d)
                (dist-probs d))
-     (alist->dist (hash-table->alist table))))
+     (entries->dist (alist->entries (hash-table->alist table)))))
 
  (define (dist-sum dists)
    (dist-collapse (entries->dist (apply append (map dist->entries dists)))))
 
  (define (dist-scale d s)
-   (alist->dist
-    (map (lambda (v p) (pair v (s* s p)))
+   (entries->dist
+    (map (lambda (v p) (list v (s* s p)))
          (dist-vals d)
          (dist-probs d))))
 

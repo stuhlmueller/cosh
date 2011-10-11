@@ -219,6 +219,15 @@
     (bar))
   (make-dist '(#t #f) '(0.541414141414141 0.458585858585858)))
 
+(define-test simple-infinite
+  (begin
+    (define (foo)
+      (if (flip .9)
+          '(1)
+          (cons 1 (foo))))
+    (car (foo)))
+  (make-dist '(1) '(1.0)))
+
 (define-test nontail-list-recursion
   (begin
     (define (foo)
@@ -228,7 +237,7 @@
                 '())))
     (car (foo)))
   (make-dist '(#t #f) '(.2 .8))
-  50
+  200
   0.02)
 
 (define-test if-mixture
@@ -266,8 +275,8 @@
           obj))
     (apply-down (foo)))
   (make-dist '(#t #f) '(.3 .7))
-  3000
-  0.03)
+  5000
+  0.05)
 
 (define-test desugared-rejection
   (begin
@@ -324,10 +333,10 @@
 
 (define-test forcing-from-above-let
   (letrec ((drq (lambda (nfqp)
-                  ((let ([val (nfqp)])
+                  (let ([val (nfqp)])
                      (if (first val)
-                         (lambda () ((rest val)))
-                         (lambda () (drq nfqp)))))))
+                         ((rest val))
+                         (drq nfqp)))))
            (forcing-from-above
             (lambda (z n)
               (drq
@@ -341,12 +350,12 @@
                           x (- n 1))
                          z))
                     (lambda () x))))))))
-    (forcing-from-above #t 4))
+    (forcing-from-above #t 1))
   (make-dist '(#t #f) '(.5 .5))
-  3000
+  5000
   0.05)
 
-(define-test forcing-from-above
+(define-test forcing-from-above-original
   (begin
     (define (forcing-from-above z n)
       (rejection-query
@@ -356,9 +365,57 @@
            #t
            (equal? (forcing-from-above x (- n 1))
                    z))))
-    (forcing-from-above #t 10))
+    (forcing-from-above #t 1))
   (make-dist '(#t #f) '(.5 .5))
-  3000
+  5000
+  0.05)
+
+(define-test forcing-from-above-simplified-1
+  (begin
+    (define (forcing-from-above z n)
+      (let* ([x (flip .3)]
+             [c (if (= n 0)
+                    #t
+                    (equal? z (forcing-from-above x (- n 1))))])
+        (if c
+            x
+            (forcing-from-above z n))))
+    (forcing-from-above #t 1))
+  (make-dist '(#t #f) '(.3 .7))
+  5000
+  0.05)
+
+(define-test forcing-from-above-simplified-2
+  (letrec ((drq (lambda (nfqp)
+                  (let ([val (nfqp)])
+                    (if (first val)
+                        ((rest val))
+                        (drq nfqp)))))
+           (foo (lambda (n)
+                  (drq
+                   (lambda () ((lambda (x n)
+                            (pair (if (= n 0) #t (foo 0))
+                                  (lambda () x))) #t n))))))
+    (foo 1))
+  (make-dist '(#t #f) '(.5 .5))
+  5000
+  0.05)
+
+(define-test forcing-from-above-simplified-3
+  (letrec ((drq (lambda (nfqp)
+                  (let ([val (nfqp)])
+                    (if (first val)
+                        ((rest val))
+                        (drq nfqp)))))
+           (bar (lambda (x n)
+                  (pair (if (= n 0) #t (foo 0))
+                        (lambda () x))))
+           (foo (lambda (n)
+                  (drq
+                   (lambda () (bar #t n))))))
+    (foo 1))
+  (make-dist '(#t) '(1.))
+  5000
   0.05)
 
 (define-test bayes-net
@@ -369,56 +426,21 @@
     D)
   (make-dist '(#t #f) '(.435 .565)))
 
-
-;; --------------------------------------------------------------------
-;; Test categories
-
-(define nonrecursive-tests
-  (list raw-primitive
-        raw-number
-        raw-symbol
-        raw-letrec
-        raw-if
-        raw-begin
-        raw-application
-        lambda-variables
-        let-variables
-        letrec-variables
-        begin-define-variables
-        no-recursion
-        stochastic-arg
-        stochastic-args
-        not-true
-        not-true-nested
-        if-safety
-        nested-applications
-        bayes-net))
-
-(define recursive-finite-tests
-  (list nontail-recursion
-        nontail-if-predicate
-        if-mixture
-        desugared-rejection
-        desugared-rejection-2
-        trivial-rejection
-        simple-rejection
-        forcing-from-above-let
-        forcing-from-above))
-
-(define recursive-infinite-tests
-  (list nontail-list-recursion
-        high-orders))
+;; if p is > .5, doesn't halt with probability 1; inference doesn't
+;; converge to 1.
+;; (define-test nonhalting
+;;   (begin
+;;     (define (foo)
+;;       (if (if (flip .8) (foo) #t)
+;;           #f
+;;           (foo)))
+;;     (foo))
+;;   (make-dist '(1) '(1.0)))
 
 
 ;; --------------------------------------------------------------------
 ;; Main
 
-(run-tests nonrecursive-tests)
+(run-tests)
 
-;; (define-test symbolic-test
-;;   (let* ([A (flip 'x)]
-;;          [B (flip 'y)])
-;;     (or A B))
-;;   (make-dist '(#t #f) '(unknown)))
-
-;; (pe (debug-test symbolic-test 'depth 5 'verbose #t))
+;; (pe (debug-test forcing-from-above-original 'depth 1000 'verbose #f))
