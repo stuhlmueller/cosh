@@ -4,7 +4,7 @@
         (scheme-tools)
         (scheme-tools debug)
         (cosh simple dist)
-        (cosh simple streams))
+        (cosh simple cosh))
 
 
 ;; --------------------------------------------------------------------

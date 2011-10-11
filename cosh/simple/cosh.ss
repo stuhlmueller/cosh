@@ -11,7 +11,7 @@
 
 (library
 
- (cosh simple streams)
+ (cosh simple cosh)
 
  (export cosh
          debug-mode)
