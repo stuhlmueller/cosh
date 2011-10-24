@@ -41,7 +41,7 @@ def get_scheme_command():
     Check whether vicare or ikarus scheme are available and return
     appropriate command.
     """
-    scheme_commands = ["vicare", "ikarus"]
+    scheme_commands = ["ikarus", "vicare"]
     for scheme_command in scheme_commands:
         out = commands.getoutput("which %s" % scheme_command).strip()
         if out:
