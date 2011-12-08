@@ -1,8 +1,8 @@
 #!/usr/bin/python
-import os, sys, commands
+import os, sys, commands, re
 from subprocess import Popen
 from utils import optfunc
-from os.path import abspath, dirname
+from os.path import abspath, dirname, join, exists
 from datetime import datetime
 
 def vprint(s, verbose):
@@ -55,6 +55,24 @@ def get_scheme_command():
             return out
     return False
 
+LOAD_PATTERN = r"(\(load\s+\"([^\"]+)\"\s*\))"
+
+def inline(fn, paths):
+    """
+    Recursively inline all occurrences of (load "filename") in the
+    file named "fn", searching all paths in the variable "paths", and
+    return the inlined file contents.
+    """
+    for path in paths:
+        fp = join(path, fn)
+        if exists(fp):
+            s = open(fp).read()
+            break
+    for (sexp, fn2) in re.findall(LOAD_PATTERN, s):
+        paths2 = [abspath(dirname(fn2))] + paths
+        s = s.replace(sexp, inline(fn2, paths2))
+    return s
+
 @optfunc.main
 @optfunc.arghelp('limit', 'restrict graph size')
 @optfunc.arghelp('verbose', 'display all executed commands')
@@ -82,7 +100,7 @@ def main(file, limit="", verbose=False, debug=False, time=False, keep=False, set
     for (i, (param_key, param_value)) in enumerate(params):
         
         vprint("Generating scheme code ...", verbose)
-        code = open(in_path).read()
+        code = inline(in_path, [abspath(dirname(file))])
 
         if param_key:
             vprint("* %s: %s" % (param_key, param_value), True)
