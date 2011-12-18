@@ -129,6 +129,9 @@
      (define (compose f g)
        (lambda args (f (apply g args))))
 
+     (define (no-proposals x)
+       x)
+
      ))
 
  )
