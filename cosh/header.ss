@@ -86,6 +86,16 @@
                                  (list (log .5) (log .5)))))
         'flip))
 
+     (define log-flip
+       (vector
+        (lambda (self k . p)
+          (make-continuation k
+                             (list #t #f)
+                             (if (not (null? p))
+                                 (list (first p) (log (- 1.0 (exp (first p)))))
+                                 (list (log .5) (log .5)))))
+        'log-flip))
+
      (define sample-integer
        (vector
         (lambda (self k n)
