@@ -29,7 +29,6 @@
          (cosh polymarg)
          (cosh polycommon)
          (cosh polygraph)
-         (cosh polygraph simplify)
          (cosh polymap)
          (cosh components)
          (cosh desugar)
@@ -83,8 +82,7 @@
  ;; (thunk, graph-size-limit) -> dist
  (define (marg-cc-cps-thunk cc-cps-thunk graph-size-limit)
    (marg-graph
-    (simplify-polygraph!
-     (cc-cps-thunk->graph cc-cps-thunk graph-size-limit))))
+    (cc-cps-thunk->graph cc-cps-thunk graph-size-limit)))
 
  ;; (header, expr) -> dist
  (define (marg-expr header expr graph-size-limit)
@@ -92,11 +90,9 @@
    (let* ([cc-cps-thunk (opt-timeit (verbose) (expr->cc-cps-thunk header expr))]
           [graph (opt-timeit (verbose) (cc-cps-thunk->graph cc-cps-thunk graph-size-limit))]
           [original-graph-size (graph-size graph)]
-          [simple-graph (opt-timeit (verbose) (simplify-polygraph! graph))]
-          [marginals (opt-timeit (verbose) (marg-graph simple-graph))])
+          [marginals (opt-timeit (verbose) (marg-graph graph))])
      (verbose-pe "\nSPACE:\n"
-                 "- graph-size: " original-graph-size "\n"
-                 "- simple-graph-size: " (graph-size simple-graph) "\n\n")     
+                 "- graph-size: " original-graph-size "\n")
      marginals))
 
  
