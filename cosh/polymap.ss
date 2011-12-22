@@ -23,16 +23,22 @@
          [seen? (make-watcher)])
      (build-polymap! graph seen? polymap (graph:root graph) (graph:root graph))))
 
+ (define (add-score-ref-links! graph seen? polymap root weight)
+   (let add-links! ([weight weight])
+     (cond [(score-ref? weight)
+            (let ([subroot (score-ref->root weight)])
+              (build-polymap! graph seen? polymap subroot subroot)
+              (graph:link! polymap root subroot subroot 'unweighted))]
+           [(list? weight) (map add-links! weight)]
+           [else #f])))
+ 
  (define (build-polymap! graph seen? polymap root node)
    (when (not (seen? (pair node root)))
          (when (null? (graph:parent-links graph node))
                (graph:add-node! polymap node))
          (for-each (lambda (link)
                      (let ([weight (link->weight link)])
-                       (when (score-ref? weight)
-                             (let ([subroot (score-ref->root weight)])
-                               (build-polymap! graph seen? polymap subroot subroot)
-                               (graph:link! polymap root subroot subroot 'unweighted)))
+                       (add-score-ref-links! graph seen? polymap root weight)
                        (build-polymap! graph seen? polymap root (link->target link))))
                    (graph:child-links graph node)))
    polymap)

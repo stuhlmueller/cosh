@@ -67,11 +67,14 @@
 
  (define (link->variable/weight link)
    (let ([weight (link->weight link)])
-     (cond [(number? weight) weight]
-           [(score-ref? weight)
-            (node->variable-name (score-ref->root weight)
-                                 (score-ref->terminal-node weight))]
-           [else (error weight "unknown link weight type")])))
+     (let score-refs->vars ([weight weight])
+       (cond [(score-ref? weight)
+              (node->variable-name (score-ref->root weight)
+                                   (score-ref->terminal-node weight))]
+             [(list? weight) (map score-refs->vars weight)]
+             [(number? weight) weight]
+             [(symbol? weight) weight]
+             [else (error weight "unknown link weight type")]))))
  
  (define (node->eqn root node parent-links)
    `(= ,(node->variable-name root node)

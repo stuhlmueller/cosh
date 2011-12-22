@@ -88,6 +88,11 @@
      (define (nflip p)
        (if (flip p) 1 0))
 
+     (define (kl-flip A B domain)
+       (let* ([_ (A)]
+              [_ (B)])
+         (kl-flip/no-apply A B domain)))
+
      (define (binomial p n)
        (sum-repeat (lambda () (nflip p))
                    n))

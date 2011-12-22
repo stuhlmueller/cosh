@@ -12,69 +12,43 @@
    '((import (rnrs)
              (rnrs mutable-pairs)
              (scheme-tools object-id)
-             (only (scheme-tools) pair rest sum pretty-print pe sym+num exact->inexact inexact->exact all-combinations)
+             (only (scheme-tools)
+                   pair rest sum pretty-print pe sym+num exact->inexact inexact->exact all-combinations)
              (only (scheme-tools math) random-real random-integer randomize-rng)
              (except (scheme-tools srfi-compat :1) any)
              (scheme-tools hash)
              (only (scheme-tools external) void)
+             (only (cosh polycommon) make-root-node make-score-ref)
              (cosh continuation)
              (cosh application)
              (cosh abort)
              (cosh))
 
-     ;; Marginalizes cc-cps-proc with given args, stores resulting
-     ;; distribution in cache table, and returns the distribution.
-     (define (marg&cache-dist cache cc-cps-proc args)
-       (let* ([top-k (vector (lambda (self val) val) 'top-k)]
-              [dist (marg-cc-cps-thunk (lambda () (apply (vector-ref cc-cps-proc 0) cc-cps-proc top-k args)) #f)])
-         (pe "dist from my marginal with args  " args ":  " dist "\n")
-         (hash-table-set! cache args dist)
-         dist))
+     (define (thunk->node thunk)
+       (make-root-node (sym+num 'app (object->id (list thunk '())))))
+     
+     (define (symbolic-prob thunk v)
+       (make-score-ref (thunk->node thunk) v))
 
-     ;; This takes a proc and returns a new one that does the cosh
-     ;; thing to get the marginal distribution for each args (by making
-     ;; the call graph and solving), then returns a synthetic xrp for
-     ;; this marginal distribution.
-     ;; This will only work properly for procs with no side effects
-     ;; (ie. can't close over memoized procs)
-     (define marginalize
-       (vector
-        (lambda (self k cc-cps-proc)
-          (let ([dist-cache (make-finitize-hash-table)]
-                [proc-id (object->id cc-cps-proc)])
-            ((vector-ref k 0) k
-             (vector
-              (lambda (self k1 . args)
-                (let* ([dist-cacher (lambda () (marg&cache-dist dist-cache cc-cps-proc args))]
-                       [dist (hash-table-ref dist-cache args dist-cacher)]
-                       (norm (sum (map rest dist)))
-                       (dist (if (= norm 0.0) dist (map (lambda (x) (cons (car x) (/ (cdr x) norm))) dist)))
-                       )
-                  (make-continuation k1 (map car dist) (map cdr dist))) )
-              (sym+num 'marginalized-proc proc-id)))))
-        'marginalizer))
+     (define (symbolic-log1minus expr) ;; TODO: improve
+       `(log (- 1.0 (exp ,expr))))
 
-     ;; Take two thunks and compute the KL distance between
-     ;; them. Doesn't cache, so use marginalize first.
-     (define KL
+     (define (symbolic-kl A B domain)
+       `(+ ,@(map (lambda (v) `(if (or (= ,(symbolic-prob A v) -inf.0)
+                                  (= ,(symbolic-prob B v) -inf.0))
+                              0.0
+                              (* (exp ,(symbolic-prob A v))
+                                 (- ,(symbolic-prob A v) ,(symbolic-prob B v)))))
+                  domain)))
+
+     (define kl-flip/no-apply
        (vector
-        (lambda (self k A B)
-          (let* ([top-k (vector (lambda (self val) val) 'top-k)]
-                 [distA (marg-cc-cps-thunk (lambda () (apply (vector-ref A 0) A top-k '())))]
-                 [distB (marg-cc-cps-thunk (lambda () (apply (vector-ref B 0) B top-k '())))]
-                 [kl (sum
-                      (map (lambda (av)
-                             (let* ((aprob (cdr av))
-                                    (bv (assoc (car av) distB))
-                                    (bprob (if bv (cdr bv) 0.0)))
-                               (if (= aprob 0.0)
-                                   0.0
-                                   (if (= bprob 0.0)
-                                       +inf.0
-                                       (* aprob (log (/ aprob bprob)))))))
-                           distA))])
-            ((vector-ref k 0) k kl)))
-        'KL-divergence))
+        (lambda (self k A B domain)
+          (make-continuation k
+                             (list #t #f)
+                             (list `(- ,(symbolic-kl A B domain))
+                                   (symbolic-log1minus `(- ,(symbolic-kl A B domain))))))
+        'kl-flip))
 
      (define flip
        (vector
@@ -129,5 +103,5 @@
         'apply))
 
      (randomize-rng)))
-   
-   )
+ 
+ )
