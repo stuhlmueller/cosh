@@ -16,24 +16,23 @@
          (scheme-tools)
          (cosh global)
          (cosh polymarg)
-         (cosh polycommon))
-
- (define (equation->symbols equation)
+         (cosh polycommon)) 
+ 
+ (define (equation->symbols equation eqn-filter)
    (cond [(null? equation) '()]
-         [(or (eq? equation 'logsumexp)
-              (eq? equation '+)
-              (eq? equation '=)
-              (eq? equation '*)
-              (eq? equation '/)) '()]
+         [(contains? '(= + - * / log exp logsumexp if or) equation eq?) '()]
+         [(eqn-filter equation) '()]
          [(symbol? equation) (list equation)]
-         [(list? equation) (apply append (map equation->symbols equation))]
+         [(list? equation) (apply append (map (lambda (eqn) (equation->symbols eqn eqn-filter))
+                                              equation))]
          [else '()]))
 
- (define (equations->symbols equations)
-   (fold (lambda (equation symbols)
-           (append (equation->symbols equation) symbols))
-         '()
-         equations))
+ (define (equations->symbols equations eqn-filter)
+   (unique
+    (fold (lambda (equation symbols)
+            (append (equation->symbols equation eqn-filter) symbols))
+          '()
+          equations)))
 
  ;; Filter out duplicate objects
  (define (unique objects)
@@ -43,7 +42,7 @@
  ;; Return only those bindings that talk about variables that occur in
  ;; the equations.
  (define (relevant-solution-equations equations solutions)
-   (let* ([symbols (unique (equations->symbols equations))]
+   (let* ([symbols (equations->symbols equations (lambda (x) #f))]
           [equations (filter-map (lambda (symbol)
                                    (let ([binding (hash-table-ref/default solutions symbol #f)])
                                      (if binding
@@ -57,6 +56,16 @@
            (append (subgraph->equations graph node) eqns))
          '()
          component))
+
+ (define (free-variables eqns)
+   (let ([bound-vars (map second eqns)])
+     (equations->symbols (map cddr eqns)
+                         (lambda (s) (contains? bound-vars s eq?)))))
+
+ (define (free-variable-equations eqns)
+   (map (lambda (var-name)
+          `(= ,var-name -inf.0))
+        (free-variables eqns)))
 
  (define (hash-table-set!/assert-consistent table key value)
    (let* ([hash-table-miss (gensym)]
@@ -80,7 +89,8 @@
  (define (marginalize-component! graph component solutions)
    (let* ([equations-1 (component-equations graph component)]
           [equations-2 (relevant-solution-equations equations-1 solutions)]
-          [equations (append equations-1 equations-2)]
+          [equations-3 (free-variable-equations (append equations-1 equations-2))]
+          [equations (append equations-1 equations-2 equations-3)]
           [new-solutions (iterate-with-message equations)])
      (for-each (lambda (binding)
                  (hash-table-set!/assert-consistent solutions
