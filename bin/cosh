@@ -115,6 +115,7 @@ def main(file, limit="", verbose=False, debug=False, time=False, keep=False, set
         generated = template % { "code" : code,
                                  "cosh-params" : param_string(params),
                                  "verbose" : val_string(verbose)}
+        
         f = open(settings["out_path"], "w")
         f.write(generated)
         f.close()
