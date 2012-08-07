@@ -77,11 +77,10 @@
                       (error #f "hash-table-set!/assert-unbound: not unbound"))))))
 
  (define (iterate-with-message equations)
-   (let ([iterator-env (environment '(rnrs) '(scheme-tools math))])
-     (let-values ([(solutions final-delta) (iterate/eqns equations 0.0 'env iterator-env)])
-       (when (not (= final-delta 0.0))
-             (verbose-pe (verbose) "fixed-point iterator: final delta " final-delta "\n"))
-       solutions)))
+   (let-values ([(solutions final-delta) (iterate/eqns equations 0.0)])
+     (when (not (= final-delta 0.0))
+           (verbose-pe (verbose) "fixed-point iterator: final delta " final-delta "\n"))
+     solutions))
 
  ;; component: a list of polymap nodes (= root nodes for subproblems)
  ;; solutions: association list of variable names (?) and values
