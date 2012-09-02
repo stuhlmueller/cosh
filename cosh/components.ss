@@ -11,13 +11,14 @@
          (scheme-tools srfi-compat :1)
          (scheme-tools graph)
          (scheme-tools math iterate)
+         (scheme-tools math newton)
          (scheme-tools hash)
          (scheme-tools watcher)
          (scheme-tools)
          (cosh global)
          (cosh polymarg)
-         (cosh polycommon)) 
- 
+         (cosh polycommon))
+
  (define (equation->symbols equation eqn-filter)
    (cond [(null? equation) '()]
          [(contains? '(= + - * / log exp logsumexp if or) equation eq?) '()]
@@ -38,7 +39,7 @@
  (define (unique objects)
    (let ([seen? (make-watcher)])
      (filter (lambda (obj) (not (seen? obj))) objects)))
- 
+
  ;; Return only those bindings that talk about variables that occur in
  ;; the equations.
  (define (relevant-solution-equations equations solutions)
@@ -50,7 +51,7 @@
                                          #f)))
                                  symbols)])
      (unique equations)))
- 
+
  (define (component-equations graph component)
    (fold (lambda (node eqns)
            (append (subgraph->equations graph node) eqns))
@@ -78,9 +79,13 @@
 
  (define (iterate-with-message equations)
    (let-values ([(solutions final-delta) (iterate/eqns equations 0.0)])
-     (when (not (= final-delta 0.0))
-           (verbose-pe (verbose) "fixed-point iterator: final delta " final-delta "\n"))
-     solutions))
+     (if (not (= final-delta 0.0))
+         (begin
+           (if verbose
+               (pen "fixed-point iterator: final delta " final-delta " -- trying newton...")
+               (pe "."))
+           (newton equations))
+         solutions)))
 
  ;; component: a list of polymap nodes (= root nodes for subproblems)
  ;; solutions: association list of variable names (?) and values

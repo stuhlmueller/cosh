@@ -14,9 +14,10 @@
          compmarg-expr
          expr->graph
          expr->cc-cps-thunk
-         expr->return-thunk         
+         expr->return-thunk
          expr->cc-cps-expr
          cc-cps-thunk->graph
+         return-thunk->polygraph
          header->reserved-words)
 
  (import (rnrs)
@@ -48,7 +49,7 @@
    (let ([defines (filter (lambda (e) (tagged-list? e 'define)) header)])
      (map (lambda (d) (if (list? (second d)) (caadr d) (second d)))
           defines)))
- 
+
  (define (expr->environment expr)
    (let ([imports (find (lambda (e) (tagged-list? e 'import)) expr)])
      (apply environment (rest imports))))
@@ -69,7 +70,7 @@
        ,(transform (de-sugar-toplevel expr)
                    (header->reserved-words header)
                    with-returns))))
- 
+
  ;; (header, expr) -> thunk
  (define (expr->cc-cps-thunk header expr)
    (evaluate (expr->cc-cps-expr header expr #f)))
@@ -78,7 +79,7 @@
  (define expr->graph
    ($ cc-cps-thunk->graph
       expr->cc-cps-thunk))
- 
+
  ;; (thunk, graph-size-limit) -> dist
  (define (marg-cc-cps-thunk cc-cps-thunk graph-size-limit)
    (marg-graph
@@ -95,13 +96,13 @@
                  "- graph-size: " original-graph-size "\n")
      marginals))
 
- 
+
  ;; polynomial solver
 
- ;; (header, expr) -> thunk 
+ ;; (header, expr) -> thunk
  (define (expr->return-thunk header expr)
    (evaluate (expr->cc-cps-expr header expr #t)))
- 
+
  ;; (thunk, graph-size-limit) -> dist
  (define polymarg-return-thunk
    ($ polymarg-graph
@@ -112,8 +113,8 @@
    (polymarg-return-thunk (expr->return-thunk header expr)
                           graph-size-limit))
 
- 
- ;; component solver 
+
+ ;; component solver
 
  (define (get-component-sizes graph components)
    (map (lambda (comp)

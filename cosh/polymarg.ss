@@ -4,7 +4,7 @@
 ;; system of polynomial equations and calling an equation solver.
 
 (library
- 
+
  (cosh polymarg)
 
  (export polymarg-graph
@@ -57,7 +57,7 @@
                       (lambda (node links eqns)
                         (pair (node->eqn root node links) eqns))
                       (list (node->eqn root root '())))))
- 
+
  (define (node->variable-name root node)
    (sym-append 'g (node:id root) 'n (node:id node)))
 
@@ -75,7 +75,7 @@
              [(number? weight) weight]
              [(symbol? weight) weight]
              [else (error weight "unknown link weight type")]))))
- 
+
  (define (node->eqn root node parent-links)
    `(= ,(node->variable-name root node)
        ,(if (null? parent-links)
@@ -94,7 +94,7 @@
 
  ;; FIXME: convert to return hash table
  (define (polymarg-graph graph)
-   (let* ([equations (polygraph->equations graph)]          
+   (let* ([equations (polygraph->equations graph)]
           [solutions (iterate/eqns equations 0.0)])
      (lookup-leaf-values graph solutions)))
 

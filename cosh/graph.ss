@@ -63,6 +63,6 @@
            (loop (step graph queue))))))
 
  (define (cc-cps-thunk->graph thunk graph-size-limit)
-   (add-root (explode (init thunk) graph-size-limit))) 
+   (add-root (explode (init thunk) graph-size-limit)))
 
  )

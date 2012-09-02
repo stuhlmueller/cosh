@@ -33,15 +33,15 @@
          (scheme-tools graph)
          (scheme-tools graph callback)
          (scheme-tools graph utils)
-         (scheme-tools srfi-compat :1)) 
- 
+         (scheme-tools srfi-compat :1))
+
  (define (make-root-node id)
    (make-continuation id '(init) '(0.0)))
 
  (define identity-cont-closure
    (vector (lambda (self top-value) top-value)
-           'top)) 
- 
+           'top))
+
  (define (node:id node)
    (cond [(continuation? node) (continuation:id node)]
          [(application? node) (application:id node)]
@@ -50,7 +50,7 @@
  (define (value? obj)
    (and (not (continuation? obj))
         (not (application? obj))))
- 
+
  (define (terminal-value? graph node)
    (and (value? node)
         (graph:leaf? graph node)))
@@ -69,7 +69,7 @@
    (let ([terminals (graph:reachable-terminals graph node)]
          [callbacks (graph:ancestor-callbacks graph last-node)])
      (values terminals callbacks)))
- 
+
  (define (graph:notify-ancestors-of-connection! graph node last-node)
    (let-values ([(terminals callbacks) (graph:terminals&callbacks graph node last-node)])
      (map (lambda (callback) (map (lambda (terminal) (callback terminal)) terminals))
@@ -84,7 +84,7 @@
  (define score-ref->root second)
 
  (define score-ref->terminal-node third)
- 
+
  (define (make-link-promise weight label)
    (list 'link-promise weight label))
 

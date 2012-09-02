@@ -15,7 +15,7 @@
  (import (rnrs)
          (scheme-tools)
          (scheme-tools srfi-compat :1))
- 
+
 ;;;some syntax utils
  (define (mem? sexpr) (tagged-list? sexpr 'mem))
  (define (lambda? exp) (tagged-list? exp 'lambda))
@@ -196,7 +196,7 @@
    (let* ((defines (map desugar-define-fn (filter (lambda (e) (tagged-list? e 'define)) (rest e))))
           (non-defines (filter (lambda (e) (not (tagged-list? e 'define))) (rest e))))
      (values defines non-defines)))
- 
+
  ;;we desugar (begin .. define ..) into letrec for this implementation.
  (define (begin-defines? sexpr)
    (and (tagged-list? sexpr 'begin) (not (null? (filter (lambda (e) (tagged-list? e 'define)) sexpr)))))
@@ -231,12 +231,12 @@
                  [(control-args) (drop control-part 3)]
                  [(query-exp cond-exp) (apply values (take-right expr 2))])
      `(,query-name ,temps ,@control-args (lambda ,temp-args (lambda () (begin ,@defs (pair ,cond-exp (lambda () ,query-exp))))) )))
- 
+
  (define (psmc-query? expr)
    (tempered-query? 'psmc-query expr))
  (define (desugar-psmc-query expr)
    (desugar-tempered-query 'psmc-query expr))
- 
+
  (define (mh-query/annealed-init? expr)
    (tempered-query? 'mh-query/annealed-init expr))
  (define (desugar-mh-query/annealed-init expr)
@@ -272,24 +272,24 @@
                              (tagged-list? expr 'and)
                              (tagged-list? expr 'apply)
                              (tagged-list? expr 'abort!)))
- 
-  (define (desugar-or sexpr)
+
+ (define (desugar-or sexpr)
    (if (= (length sexpr) 2)
        (second sexpr)
        `(if ,(second sexpr)
             #t
             ,(desugar-or `(or ,@(cddr sexpr))))))
 
-  (define (desugar-and sexpr)
+ (define (desugar-and sexpr)
    (if (= (length sexpr) 2)
        (second sexpr)
        `(if ,(second sexpr)
             ,(desugar-and `(and ,@(cddr sexpr)))
             #f)))
 
-  (define (desugar-abort expr)
-    `(tag 'abort abort))
- 
+ (define (desugar-abort expr)
+   `(tag 'abort abort))
+
  (define (desugar-keyword expr)
    (cond ((eq? (car expr) 'or) (desugar-or expr))
          ((eq? (car expr) 'and) (desugar-and expr))
@@ -336,6 +336,7 @@
  (register-query-sugar 'mh-query)
  (register-query-sugar 'rejection-query)
  (register-query-sugar 'exact-query)
+ (register-query-sugar 'query)
  (register-query-sugar 'enumeration-query)
  ;;(register-query-sugar 'primitive-laplace-mh-query 'laplace-mh-query)
  ;;(register-query-sugar 'primitive-gradient-query 'gradient-query)

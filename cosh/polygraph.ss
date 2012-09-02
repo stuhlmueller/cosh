@@ -91,6 +91,6 @@
      (graph:register-callback! graph subroot-node callback)
      (if subroot-is-new
          (build-graph graph graph-size-limit subthunk subroot-node subroot-link-promise)
-         (map callback (graph:reachable-terminals graph subroot-node))))) 
+         (map callback (graph:reachable-terminals graph subroot-node)))))
 
  )
