@@ -2,7 +2,7 @@
 
 Cosh is an experimental Church implementation that uses dynamic programming based on hashing factored continuations.
 
-*Cosh is deprecated. If you are looking to write probabilistic programs in Scheme syntax, [webchurch](http://github.com/probmods/webchurch) is your best bet. You can use it online at [probmods.org](http://probmods.org), or on your computer via nodejs. If you are not tied to Scheme syntax, then I recommend [webppl](http://github.com/probmods/webppl), our most recent probabilistic programming language. You can use it online at [dippl.org](http://dippl.org), or via nodejs as well. webppl is significantly faster than previous implementations, and additionally supports particle filtering and best-first enumeration inference strategies.*
+*Cosh is deprecated. If you are looking to write probabilistic programs in Scheme syntax, [webchurch](http://github.com/probmods/webchurch) is your best bet. You can use it online at [probmods.org](http://probmods.org), or on your computer via nodejs. If you are not tied to Scheme syntax, I recommend [webppl](http://webppl.org), our most recent probabilistic programming language. webppl is significantly faster than previous implementations, and additionally supports particle filtering and best-first enumeration inference strategies.*
 
 ## Installation
 
